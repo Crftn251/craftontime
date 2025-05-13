@@ -86,7 +86,7 @@ const ProfilePage: NextPage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full">
+      <div className="flex flex-1 justify-center items-center h-full">
         <p>Loading profile...</p>
       </div>
     );
@@ -94,27 +94,29 @@ const ProfilePage: NextPage = () => {
 
   if (!user) {
     return (
-      <Card className="max-w-md mx-auto mt-10 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserCircle className="w-8 h-8 text-destructive" />
-            Profile Not Found
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            User details could not be loaded. Please try logging in again.
-          </p>
-          <Button asChild className="w-full">
-            <Link href="/login">Go to Login</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex flex-1 justify-center items-center h-full">
+        <Card className="max-w-md mx-auto mt-10 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCircle className="w-8 h-8 text-destructive" />
+              Profile Not Found
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              User details could not be loaded. Please try logging in again.
+            </p>
+            <Button asChild className="w-full">
+              <Link href="/login">Go to Login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center justify-start py-8">
+    <div className="flex flex-col items-center justify-center flex-1 py-8">
       <div className="space-y-8 w-full max-w-4xl">
         <h1 className="text-3xl font-bold tracking-tight text-center">My Profile</h1>
         
