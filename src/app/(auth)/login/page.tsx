@@ -82,10 +82,10 @@ const LoginPage: NextPage = () => {
                 <Button
                   key={user.id}
                   variant={selectedUserId === user.id ? 'default' : 'outline'}
-                  className="flex flex-col items-center justify-center h-28 w-full aspect-square p-2 text-center"
+                  className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
                   onClick={() => setSelectedUserId(user.id)}
                 >
-                  <User className="w-8 h-8 mb-2" />
+                  <User className="w-7 h-7 mb-1.5" />
                   <span className="text-xs leading-tight">{user.name}</span>
                 </Button>
               ))}
