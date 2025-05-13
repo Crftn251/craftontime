@@ -3,7 +3,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Briefcase, UserCircle, LogOut, Settings, User } from 'lucide-react';
+import { Briefcase, UserCircle, LogOut, Settings, User, LayoutDashboard } from 'lucide-react'; // Added LayoutDashboard
 import { BranchSelector } from '@/components/shared/BranchSelector';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -49,7 +49,14 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
       localStorage.removeItem('employeeTimeTracker_startTime');
       localStorage.removeItem('employeeTimeTracker_elapsedTime');
       localStorage.removeItem('employeeTimeTracker_isRunning');
-      localStorage.removeItem('timeEntries'); // Important to clear entries of the logged-out user
+      // Ensure user-specific time entries are cleared
+      const userId = currentUser?.id; // Use the actual current user's ID before clearing
+      if (userId) {
+        localStorage.removeItem(`timeEntries_${userId}`);
+      } else {
+        // Fallback if currentUser was not available for some reason, clear generic if it was ever used
+        localStorage.removeItem('timeEntries');
+      }
     }
     router.push('/login');
   };
@@ -57,13 +64,34 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Briefcase className="h-7 w-7 text-primary" />
-          <span className="text-xl font-bold tracking-tight">Crafton Time Track</span>
-        </Link>
+        <div className="flex items-center gap-4 md:gap-6"> {/* Adjusted gap */}
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Briefcase className="h-7 w-7 text-primary" />
+            <span className="text-xl font-bold tracking-tight">Crafton Time Track</span>
+          </Link>
+          
+          {/* Explicit Navigation Links */}
+          {currentUser && (
+            <nav className="hidden md:flex items-center gap-1">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/profile" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+                  <User className="h-4 w-4" />
+                  Profile
+                </Link>
+              </Button>
+            </nav>
+          )}
+        </div>
+
         <div className="flex items-center gap-4">
           {currentUser && <BranchSelector onBranchChange={onBranchChange} />}
-          <Separator orientation="vertical" className="h-8" />
+          {currentUser && <Separator orientation="vertical" className="h-8" />}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
