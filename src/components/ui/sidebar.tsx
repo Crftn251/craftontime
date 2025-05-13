@@ -70,9 +70,18 @@ const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
 
-    // This is the internal state of the sidebar.
-    // We use openProp and setOpenProp for control from outside the component.
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    const [_open, _setOpen] = React.useState(() => {
+      if (typeof window === "undefined") {
+        return defaultOpen
+      }
+      const cookieValue = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+        ?.split("=")[1]
+
+      return cookieValue ? cookieValue === "true" : defaultOpen
+    })
+
     const open = openProp ?? _open
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -83,20 +92,34 @@ const SidebarProvider = React.forwardRef<
           _setOpen(openState)
         }
 
-        // This sets the cookie to keep the sidebar state.
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        if (typeof window !== "undefined") {
+          document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        }
       },
       [setOpenProp, open]
     )
 
-    // Helper to toggle the sidebar.
+    React.useEffect(() => {
+      // Sync cookie on initial mount if controlled prop isn't provided
+      if (openProp === undefined && typeof window !== "undefined") {
+        const cookieValue = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+          ?.split("=")[1];
+        const cookieOpen = cookieValue ? cookieValue === "true" : defaultOpen;
+        if (_open !== cookieOpen) {
+           _setOpen(cookieOpen);
+        }
+      }
+    }, [openProp, defaultOpen, _open]);
+
+
     const toggleSidebar = React.useCallback(() => {
       return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
+        ? setOpenMobile((current) => !current)
+        : setOpen((current) => !current)
     }, [isMobile, setOpen, setOpenMobile])
 
-    // Adds a keyboard shortcut to toggle the sidebar.
     React.useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (
@@ -112,8 +135,6 @@ const SidebarProvider = React.forwardRef<
       return () => window.removeEventListener("keydown", handleKeyDown)
     }, [toggleSidebar])
 
-    // We add a state so that we can do data-state="expanded" or "collapsed".
-    // This makes it easier to style the sidebar with Tailwind classes.
     const state = open ? "expanded" : "collapsed"
 
     const contextValue = React.useMemo<SidebarContext>(
@@ -323,7 +344,22 @@ const SidebarInset = React.forwardRef<
       ref={ref}
       className={cn(
         "relative flex min-h-svh flex-1 flex-col bg-background",
-        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
+        // Base transition for margin adjustments.
+        "duration-200 transition-[margin-left,margin-right] ease-linear",
+        // Default variant, left side.
+        "md:peer-data-[side=left]:ml-[var(--sidebar-width)]",
+        "md:peer-data-[state=collapsed]:peer-data-[side=left]:ml-[var(--sidebar-width-icon)]",
+        "md:peer-data-[collapsible=offcanvas]:peer-data-[side=left]:ml-0",
+        // Default variant, right side.
+        "md:peer-data-[side=right]:mr-[var(--sidebar-width)]",
+        "md:peer-data-[state=collapsed]:peer-data-[side=right]:mr-[var(--sidebar-width-icon)]",
+        "md:peer-data-[collapsible=offcanvas]:peer-data-[side=right]:mr-0",
+        // Inset variant specific styles.
+        "peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))]",
+        "md:peer-data-[variant=inset]:m-2",
+        "md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+_theme(spacing.2))]", // Adjusted for inset when collapsed
+        "md:peer-data-[variant=inset]:ml-[calc(var(--sidebar-width)_+_theme(spacing.4))]", // Adjusted for inset when expanded
+        "md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
       {...props}
