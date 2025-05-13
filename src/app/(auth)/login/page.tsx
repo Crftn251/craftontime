@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Branch, UserProfile } from '@/lib/types';
 import { BRANCHES, MOCK_USERS } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -100,19 +99,20 @@ const LoginPage: NextPage = () => {
               Filiale auswählen
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Select value={selectedBranch} onValueChange={(value) => setSelectedBranch(value as Branch)}>
-              <SelectTrigger id="branch-select" className="w-full">
-                <SelectValue placeholder="Filiale auswählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                {BRANCHES.map((branch) => (
-                  <SelectItem key={branch} value={branch}>
-                    {branch}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardContent className="h-auto pr-2"> {/* Adjusted height and padding */}
+            <div className="grid grid-cols-3 gap-3">
+              {BRANCHES.map((branch) => (
+                <Button
+                  key={branch}
+                  variant={selectedBranch === branch ? 'default' : 'outline'}
+                  className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
+                  onClick={() => setSelectedBranch(branch)}
+                >
+                  <Building className="w-7 h-7 mb-1.5" /> {/* Using Building icon for branches */}
+                  <span className="text-xs leading-tight">{branch}</span>
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
         
