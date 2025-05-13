@@ -133,7 +133,6 @@ const ProfilePage: NextPage = () => {
             <CardDescription>{user.email}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Removed Details, Preferences, and Edit Profile button as requested */}
             <p className="text-sm text-muted-foreground text-center">
               Time tracking overview and data export options are available below.
             </p>
@@ -169,4 +168,3 @@ const ProfilePage: NextPage = () => {
 };
 
 export default ProfilePage;
-
