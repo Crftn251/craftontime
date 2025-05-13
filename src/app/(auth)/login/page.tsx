@@ -7,11 +7,10 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import type { Branch, UserProfile } from '@/lib/types';
 import { BRANCHES, MOCK_USERS } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Briefcase, User, LogIn, Building } from 'lucide-react';
+import { Briefcase, User, LogIn, Building, Users } from 'lucide-react';
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
@@ -73,23 +72,24 @@ const LoginPage: NextPage = () => {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <User className="w-6 h-6" />
+              <Users className="w-6 h-6" />
               Mitarbeiter auswählen
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger id="employee-select" className="w-full">
-                <SelectValue placeholder="Mitarbeiter auswählen..." />
-              </SelectTrigger>
-              <SelectContent>
-                {MOCK_USERS.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-3 gap-3">
+              {MOCK_USERS.map((user) => (
+                <Button
+                  key={user.id}
+                  variant={selectedUserId === user.id ? 'default' : 'outline'}
+                  className="flex flex-col items-center justify-center h-28 w-full aspect-square p-2 text-center"
+                  onClick={() => setSelectedUserId(user.id)}
+                >
+                  <User className="w-8 h-8 mb-2" />
+                  <span className="text-xs leading-tight">{user.name}</span>
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
@@ -130,3 +130,4 @@ const LoginPage: NextPage = () => {
 };
 
 export default LoginPage;
+
