@@ -1,30 +1,88 @@
+
 'use client';
 
 import type { NextPage } from 'next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UserCircle } from 'lucide-react';
+import { UserCircle, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { UserProfile } from '@/lib/types';
-import { MOCK_USERS } from '@/lib/types'; // Assuming MOCK_USERS is here for demo
+import type { UserProfile, TimeEntry } from '@/lib/types';
+import { MOCK_USERS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ProfileOverviewTile } from '@/components/features/ProfileOverviewTile';
+import { useToast } from "@/hooks/use-toast";
 
 const ProfilePage: NextPage = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const userId = localStorage.getItem('loggedInUserId');
       if (userId) {
-        // In a real app, fetch user data from an API
-        // For this demo, we'll use MOCK_USERS
         const foundUser = MOCK_USERS.find(u => u.id === userId);
         setUser(foundUser || null);
+
+        const storedEntriesKey = `timeEntries_${userId}`;
+        const storedEntries = localStorage.getItem(storedEntriesKey);
+        if (storedEntries) {
+          try {
+            const parsedEntries = JSON.parse(storedEntries);
+            if (Array.isArray(parsedEntries)) {
+              setTimeEntries(parsedEntries);
+            } else {
+              setTimeEntries([]);
+            }
+          } catch (e) {
+            console.error("Failed to parse time entries from localStorage", e);
+            setTimeEntries([]);
+          }
+        } else {
+          setTimeEntries([]);
+        }
       }
       setLoading(false);
     }
   }, []);
+
+  const handleExportData = () => {
+    if (!user || timeEntries.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "There are no time entries to export for this user.",
+        variant: "default",
+      });
+      return;
+    }
+
+    const dataToExport = {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      timeEntries: timeEntries.map(entry => ({
+        ...entry,
+        startTime: new Date(entry.startTime).toISOString(),
+        endTime: entry.endTime ? new Date(entry.endTime).toISOString() : undefined,
+      })),
+      exportedAt: new Date().toISOString(),
+    };
+
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(dataToExport, null, 2)
+    )}`;
+    const link = document.createElement("a");
+    link.href = jsonString;
+    link.download = `time_entries_${user.id}_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    toast({
+        title: "Data Exported",
+        description: "Time entries have been downloaded as a JSON file.",
+    });
+  };
 
   if (loading) {
     return (
@@ -58,6 +116,7 @@ const ProfilePage: NextPage = () => {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
+      
       <Card className="max-w-2xl mx-auto shadow-xl">
         <CardHeader className="items-center text-center">
             {user.avatarUrl ? (
@@ -85,6 +144,30 @@ const ProfilePage: NextPage = () => {
              <p className="text-sm text-muted-foreground">Profile preferences can be managed here. (Feature not yet implemented)</p>
           </div>
           <Button variant="outline" className="w-full mt-6" disabled>Edit Profile (Coming Soon)</Button>
+        </CardContent>
+      </Card>
+
+      <ProfileOverviewTile timeEntries={timeEntries} />
+
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="w-6 h-6" />
+            Data Export
+          </CardTitle>
+          <CardDescription>Download your time tracking data.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Export all your recorded time entries as a JSON file.
+          </p>
+          <Button 
+            className="w-full" 
+            onClick={handleExportData} 
+            disabled={timeEntries.length === 0}
+          >
+            Export My Data
+          </Button>
         </CardContent>
       </Card>
     </div>
