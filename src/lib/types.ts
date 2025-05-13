@@ -29,8 +29,19 @@ export interface User extends UserProfile {
 
 // Mock users for login selection
 export const MOCK_USERS: UserProfile[] = [
-  { id: 'user1', name: 'Alice Wonderland', email: 'alice@crafton.com' },
-  { id: 'user2', name: 'Bob The Builder', email: 'bob@crafton.com' },
-  { id: 'user3', name: 'Charlie Brown', email: 'charlie@crafton.com' },
-  { id: 'user4', name: 'Diana Prince', email: 'diana@crafton.com' },
+  { id: 'user1', name: 'Maria', email: 'maria@crafton.com' },
+  { id: 'user2', name: 'Elke', email: 'elke@crafton.com' },
+  { id: 'user3', name: 'Marek', email: 'marek@crafton.com' },
+  { id: 'user4', name: 'Jason', email: 'jason@crafton.com' },
+  { id: 'user5', name: 'Nele', email: 'nele@crafton.com' },
+  { id: 'user6', name: 'Jim', email: 'jim@crafton.com' },
+  { id: 'user7', name: 'Schicki', email: 'schicki@crafton.com' },
+  { id: 'user8', name: 'Ahmad', email: 'ahmad@crafton.com' },
+  { id: 'user9', name: 'Vanessa', email: 'vanessa@crafton.com' },
+  { id: 'user10', name: 'Manjana', email: 'manjana@crafton.com' },
+  { id: 'user11', name: 'Chris', email: 'chris@crafton.com' },
+  { id: 'user12', name: 'Sarah', email: 'sarah@crafton.com' },
+  { id: 'user13', name: 'Martina', email: 'martina@crafton.com' },
+  { id: 'user14', name: 'Julie', email: 'julie@crafton.com' },
+  { id: 'user15', name: 'Regina', email: 'regina@crafton.com' },
 ];
