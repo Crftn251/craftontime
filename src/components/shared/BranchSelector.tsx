@@ -47,12 +47,12 @@ export const BranchSelector: FC<BranchSelectorProps> = ({ defaultBranch, onBranc
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="w-[120px] justify-between">
+        <Button variant="outline" size="lg" className="w-[150px] justify-between">
           {selectedBranch || "Select Branch"}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[120px]">
+      <DropdownMenuContent className="w-[150px]">
         <DropdownMenuRadioGroup value={selectedBranch} onValueChange={handleBranchChange}>
           {BRANCHES.map((branch) => (
             <DropdownMenuRadioItem key={branch} value={branch}>
