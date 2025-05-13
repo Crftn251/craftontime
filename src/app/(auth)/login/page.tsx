@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { NextPage } from 'next';
@@ -10,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import type { Branch, UserProfile } from '@/lib/types';
 import { BRANCHES, MOCK_USERS } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Briefcase, User, LogIn } from 'lucide-react';
+import { Briefcase, User, LogIn, Building } from 'lucide-react';
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
@@ -28,11 +29,11 @@ const LoginPage: NextPage = () => {
 
   const handleLogin = () => {
     if (!selectedUserId) {
-      toast({ title: 'Selection Missing', description: 'Please select an employee.', variant: 'destructive' });
+      toast({ title: 'Auswahl fehlt', description: 'Bitte wählen Sie einen Mitarbeiter aus.', variant: 'destructive' });
       return;
     }
     if (!selectedBranch) {
-      toast({ title: 'Selection Missing', description: 'Please select a branch.', variant: 'destructive' });
+      toast({ title: 'Auswahl fehlt', description: 'Bitte wählen Sie eine Filiale aus.', variant: 'destructive' });
       return;
     }
 
@@ -45,13 +46,12 @@ const LoginPage: NextPage = () => {
         localStorage.setItem('selectedBranch', selectedBranch);
         localStorage.setItem('isAuthenticated', 'true');
         
-        // Store selected user's name for display in header
         const user = MOCK_USERS.find(u => u.id === selectedUserId);
         if (user) {
             localStorage.setItem('loggedInUserName', user.name);
         }
       }
-      toast({ title: 'Login Successful', description: `Welcome! Redirecting to dashboard for branch ${selectedBranch}.` });
+      toast({ title: 'Anmeldung erfolgreich', description: `Willkommen! Weiterleitung zum Dashboard für Filiale ${selectedBranch}.` });
       router.push('/dashboard');
       setIsLoading(false);
     }, 500);
@@ -59,22 +59,28 @@ const LoginPage: NextPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-secondary/50 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+      <Card className="w-full max-w-md shadow-2xl mb-6">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Briefcase className="h-16 w-16 text-primary" />
           </div>
           <CardTitle className="text-3xl font-bold">Crafton Time Track</CardTitle>
-          <CardDescription>Please select your profile and branch to continue.</CardDescription>
+          <CardDescription>Bitte wählen Sie Ihr Profil und Ihre Filiale aus, um fortzufahren.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="employee-select" className="flex items-center gap-2">
-              <User className="w-4 h-4" /> Employee
-            </Label>
+      </Card>
+
+      <div className="w-full max-w-md space-y-6">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <User className="w-6 h-6" />
+              Mitarbeiter auswählen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
               <SelectTrigger id="employee-select" className="w-full">
-                <SelectValue placeholder="Select employee..." />
+                <SelectValue placeholder="Mitarbeiter auswählen..." />
               </SelectTrigger>
               <SelectContent>
                 {MOCK_USERS.map((user) => (
@@ -84,14 +90,20 @@ const LoginPage: NextPage = () => {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="branch-select" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" /> Branch
-            </Label>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <Building className="w-6 h-6" />
+              Filiale auswählen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <Select value={selectedBranch} onValueChange={(value) => setSelectedBranch(value as Branch)}>
               <SelectTrigger id="branch-select" className="w-full">
-                <SelectValue placeholder="Select branch..." />
+                <SelectValue placeholder="Filiale auswählen..." />
               </SelectTrigger>
               <SelectContent>
                 {BRANCHES.map((branch) => (
@@ -101,19 +113,18 @@ const LoginPage: NextPage = () => {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleLogin} className="w-full" size="lg" disabled={isLoading}>
-            {isLoading ? (
-              <LogIn className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              <LogIn className="mr-2 h-5 w-5" />
-            )}
-            Proceed
-          </Button>
-        </CardFooter>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Button onClick={handleLogin} className="w-full" size="lg" disabled={isLoading || !selectedUserId || !selectedBranch}>
+          {isLoading ? (
+            <LogIn className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <LogIn className="mr-2 h-5 w-5" />
+          )}
+          Weiter
+        </Button>
+      </div>
     </div>
   );
 };
