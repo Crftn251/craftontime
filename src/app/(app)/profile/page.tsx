@@ -133,20 +133,10 @@ const ProfilePage: NextPage = () => {
             <CardDescription>{user.email}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold text-lg mb-2">Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <p><span className="font-medium text-muted-foreground">User ID:</span> {user.id}</p>
-                  <p><span className="font-medium text-muted-foreground">Status:</span> <span className="text-green-600 font-semibold">Active</span></p>
-                  <p><span className="font-medium text-muted-foreground">Role:</span> Employee</p>
-                   <p><span className="font-medium text-muted-foreground">Joined:</span> January 1, 2023 (Placeholder)</p>
-              </div>
-            </div>
-             <div>
-              <h3 className="font-semibold text-lg mb-2">Preferences</h3>
-               <p className="text-sm text-muted-foreground">Profile preferences can be managed here. (Feature not yet implemented)</p>
-            </div>
-            <Button variant="outline" className="w-full mt-6" disabled>Edit Profile (Coming Soon)</Button>
+            {/* Removed Details, Preferences, and Edit Profile button as requested */}
+            <p className="text-sm text-muted-foreground text-center">
+              Time tracking overview and data export options are available below.
+            </p>
           </CardContent>
         </Card>
 
@@ -179,3 +169,4 @@ const ProfilePage: NextPage = () => {
 };
 
 export default ProfilePage;
+
