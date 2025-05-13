@@ -114,62 +114,64 @@ const ProfilePage: NextPage = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold tracking-tight">My Profile</h1>
-      
-      <Card className="max-w-2xl mx-auto shadow-xl">
-        <CardHeader className="items-center text-center">
-            {user.avatarUrl ? (
-                 <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto mb-4 object-cover" data-ai-hint="person avatar" />
-            ) : (
-                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-                    <UserCircle className="w-16 h-16" />
-                </div>
-            )}
-          <CardTitle className="text-2xl">{user.name}</CardTitle>
-          <CardDescription>{user.email}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <h3 className="font-semibold text-lg mb-2">Details</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                <p><span className="font-medium text-muted-foreground">User ID:</span> {user.id}</p>
-                <p><span className="font-medium text-muted-foreground">Status:</span> <span className="text-green-600 font-semibold">Active</span></p>
-                <p><span className="font-medium text-muted-foreground">Role:</span> Employee</p>
-                 <p><span className="font-medium text-muted-foreground">Joined:</span> January 1, 2023 (Placeholder)</p>
+    <div className="flex flex-col items-center justify-start py-8">
+      <div className="space-y-8 w-full max-w-4xl">
+        <h1 className="text-3xl font-bold tracking-tight text-center">My Profile</h1>
+        
+        <Card className="shadow-xl">
+          <CardHeader className="items-center text-center">
+              {user.avatarUrl ? (
+                   <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto mb-4 object-cover" data-ai-hint="person avatar" />
+              ) : (
+                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+                      <UserCircle className="w-16 h-16" />
+                  </div>
+              )}
+            <CardTitle className="text-2xl">{user.name}</CardTitle>
+            <CardDescription>{user.email}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <p><span className="font-medium text-muted-foreground">User ID:</span> {user.id}</p>
+                  <p><span className="font-medium text-muted-foreground">Status:</span> <span className="text-green-600 font-semibold">Active</span></p>
+                  <p><span className="font-medium text-muted-foreground">Role:</span> Employee</p>
+                   <p><span className="font-medium text-muted-foreground">Joined:</span> January 1, 2023 (Placeholder)</p>
+              </div>
             </div>
-          </div>
-           <div>
-            <h3 className="font-semibold text-lg mb-2">Preferences</h3>
-             <p className="text-sm text-muted-foreground">Profile preferences can be managed here. (Feature not yet implemented)</p>
-          </div>
-          <Button variant="outline" className="w-full mt-6" disabled>Edit Profile (Coming Soon)</Button>
-        </CardContent>
-      </Card>
+             <div>
+              <h3 className="font-semibold text-lg mb-2">Preferences</h3>
+               <p className="text-sm text-muted-foreground">Profile preferences can be managed here. (Feature not yet implemented)</p>
+            </div>
+            <Button variant="outline" className="w-full mt-6" disabled>Edit Profile (Coming Soon)</Button>
+          </CardContent>
+        </Card>
 
-      <ProfileOverviewTile timeEntries={timeEntries} />
+        <ProfileOverviewTile timeEntries={timeEntries} />
 
-      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="w-6 h-6" />
-            Data Export
-          </CardTitle>
-          <CardDescription>Download your time tracking data.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Export all your recorded time entries as a JSON file.
-          </p>
-          <Button 
-            className="w-full" 
-            onClick={handleExportData} 
-            disabled={timeEntries.length === 0}
-          >
-            Export My Data
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="w-6 h-6" />
+              Data Export
+            </CardTitle>
+            <CardDescription>Download your time tracking data.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Export all your recorded time entries as a JSON file.
+            </p>
+            <Button 
+              className="w-full" 
+              onClick={handleExportData} 
+              disabled={timeEntries.length === 0}
+            >
+              Export My Data
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
