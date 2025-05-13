@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 
 export default function HomePage() {
-  redirect('/dashboard');
-  // Optionally, return a loading component or null
+  redirect('/login'); // Redirect to the new login page
   return null;
 }

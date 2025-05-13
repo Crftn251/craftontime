@@ -1,67 +1,109 @@
-"use client"; // This page uses hooks and state, so it's a Client Component
+
+"use client"; 
 
 import { useState, useEffect } from 'react';
 import type { NextPage } from 'next';
+import { useRouter } from 'next/navigation';
 import { TimeTracker } from '@/components/features/TimeTracker';
 import { ManualEntryTile } from '@/components/features/ManualEntryTile';
 import { ProfileOverviewTile } from '@/components/features/ProfileOverviewTile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Download } from 'lucide-react';
+import { Users, Download, AlertTriangle } from 'lucide-react';
 import type { Branch, TimeEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 
-// Mock function to simulate fetching current branch, would come from context or user profile
-const useCurrentBranch = (): Branch | undefined => {
+const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string | null } => {
   const [branch, setBranch] = useState<Branch | undefined>();
+  const [userId, setUserId] = useState<string | null>(null);
+  const router = useRouter();
+
   useEffect(() => {
-    const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
-    if (storedBranch) {
-      setBranch(storedBranch);
-    } else {
-      setBranch("SPZ"); // Default or first available
+    if (typeof window !== 'undefined') {
+      const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
+      const storedUserId = localStorage.getItem('loggedInUserId');
+
+      if (storedBranch) {
+        setBranch(storedBranch);
+      } else {
+        // This case should ideally be handled by AppLayout redirecting to login if not set
+        toast({ title: "Branch Error", description: "No branch selected. Please re-login.", variant: "destructive" });
+        router.push('/login');
+      }
+
+      if (storedUserId) {
+        setUserId(storedUserId);
+      } else {
+        // This case should also be handled by AppLayout
+        toast({ title: "User Error", description: "User not identified. Please re-login.", variant: "destructive" });
+        router.push('/login');
+      }
+
+      const handleStorageChange = (event: StorageEvent) => {
+        if (event.key === 'selectedBranch') {
+          const newStoredBranch = event.newValue as Branch | null;
+          if (newStoredBranch) setBranch(newStoredBranch);
+        }
+        if (event.key === 'loggedInUserId') {
+           setUserId(event.newValue);
+        }
+      };
+      window.addEventListener('storage', handleStorageChange);
+      return () => window.removeEventListener('storage', handleStorageChange);
     }
-    // Listen for storage changes to update if branch changes in header
-    const handleStorageChange = () => {
-      const newStoredBranch = localStorage.getItem('selectedBranch') as Branch | null;
-      if (newStoredBranch) setBranch(newStoredBranch);
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-  return branch;
+  }, [router]);
+  return { branch, userId };
 };
 
 
 const DashboardPage: NextPage = () => {
-  const currentBranch = useCurrentBranch();
+  const { branch: currentBranch, userId: currentUserId } = useCurrentBranchAndUser();
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
 
-  // Load time entries from localStorage on mount
+  // Load time entries from localStorage on mount, specific to the current user
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedEntries = localStorage.getItem('timeEntries');
+    if (typeof window !== 'undefined' && currentUserId) {
+      const storedEntriesKey = `timeEntries_${currentUserId}`;
+      const storedEntries = localStorage.getItem(storedEntriesKey);
       if (storedEntries) {
         setTimeEntries(JSON.parse(storedEntries));
+      } else {
+        setTimeEntries([]); // Ensure it's an empty array if nothing stored
       }
+    } else if (typeof window !== 'undefined' && !currentUserId) {
+        // If currentUserId becomes null (e.g. after logout from another tab), clear entries
+        setTimeEntries([]);
     }
-  }, []);
+  }, [currentUserId]);
 
-  // Save time entries to localStorage whenever they change
+  // Save time entries to localStorage whenever they change, specific to the current user
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('timeEntries', JSON.stringify(timeEntries));
+    if (typeof window !== 'undefined' && currentUserId) {
+      const storedEntriesKey = `timeEntries_${currentUserId}`;
+      localStorage.setItem(storedEntriesKey, JSON.stringify(timeEntries));
     }
-  }, [timeEntries]);
+  }, [timeEntries, currentUserId]);
 
   const handleTimeEntryCreate = (newEntry: Partial<TimeEntry>) => {
-    const entryWithId: TimeEntry = {
+    if (!currentUserId) {
+      toast({ title: "Authentication Error", description: "User not identified. Please log in.", variant: "destructive" });
+      router.push('/login');
+      return;
+    }
+    if (!currentBranch) {
+        toast({ title: "Branch Error", description: "No branch selected. Please select a branch in the header.", variant: "destructive" });
+        return;
+    }
+
+    const entryWithDetails: TimeEntry = {
       id: crypto.randomUUID(),
-      userId: "currentUser", // Placeholder
+      userId: currentUserId,
+      branch: currentBranch, // Ensure currentBranch is part of the entry
       ...newEntry,
-    } as TimeEntry; // Cast needed because newEntry is partial
-    setTimeEntries(prevEntries => [...prevEntries, entryWithId]);
+    } as TimeEntry; 
+    setTimeEntries(prevEntries => [...prevEntries, entryWithDetails]);
   };
 
   const handleExportData = () => {
@@ -90,7 +132,7 @@ const DashboardPage: NextPage = () => {
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", "time_entries.csv");
+      link.setAttribute("download", `time_entries_${currentUserId}_${currentBranch}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();
@@ -101,16 +143,32 @@ const DashboardPage: NextPage = () => {
     }
   };
 
+  if (!currentUserId || !currentBranch) {
+    // This state should ideally be brief as AppLayout handles redirection
+    // or the hook itself redirects.
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
+        <AlertTriangle className="w-16 h-16 text-destructive" />
+        <h2 className="text-2xl font-semibold">Loading User Data...</h2>
+        <p className="text-muted-foreground">
+          If this message persists, please try logging in again.
+        </p>
+        <Button onClick={() => router.push('/login')} variant="outline">
+          Go to Login
+        </Button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight">Dashboard <span className="text-lg text-muted-foreground">({currentBranch})</span></h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <TimeTracker currentBranch={currentBranch} onTimeEntryCreate={handleTimeEntryCreate} />
         <ManualEntryTile currentBranch={currentBranch} onTimeEntryCreate={handleTimeEntryCreate} />
         
-        {/* Placeholder for Employee Management */}
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -126,7 +184,6 @@ const DashboardPage: NextPage = () => {
           </CardContent>
         </Card>
 
-        {/* Placeholder for Data Export */}
          <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
