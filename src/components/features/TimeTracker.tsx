@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -11,10 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 interface TimeTrackerProps {
   currentBranch: Branch | undefined;
   onTimeEntryCreate: (entry: Partial<TimeEntry>) => void;
+  currentUserId: string;
 }
 
-export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCreate }) => {
-  const { elapsedTime, isRunning, start, pause, stop, reset, formatTime } = useStopwatch('employeeTimeTracker');
+export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCreate, currentUserId }) => {
+  const persistanceKey = `employeeTimeTracker_${currentUserId}`;
+  const { elapsedTime, isRunning, start, pause, stop, reset, formatTime } = useStopwatch(persistanceKey);
   const { toast } = useToast();
 
   const handleStart = () => {

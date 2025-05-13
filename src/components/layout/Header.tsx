@@ -1,9 +1,10 @@
+
 "use client";
 
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Briefcase, UserCircle, LogOut, Settings, User, LayoutDashboard } from 'lucide-react'; // Added LayoutDashboard
+import { Briefcase, UserCircle, LogOut, Settings, User, LayoutDashboard } from 'lucide-react'; 
 import { BranchSelector } from '@/components/shared/BranchSelector';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -41,21 +42,25 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
+      const userId = currentUser?.id; 
+
       localStorage.removeItem('loggedInUserId');
       localStorage.removeItem('loggedInUserName');
       localStorage.removeItem('selectedBranch');
       localStorage.removeItem('isAuthenticated');
-      // Clear time tracker specific localStorage items
-      localStorage.removeItem('employeeTimeTracker_startTime');
-      localStorage.removeItem('employeeTimeTracker_elapsedTime');
-      localStorage.removeItem('employeeTimeTracker_isRunning');
-      // Ensure user-specific time entries are cleared
-      const userId = currentUser?.id; // Use the actual current user's ID before clearing
+      
       if (userId) {
+        const persistanceKey = `employeeTimeTracker_${userId}`;
+        localStorage.removeItem(`${persistanceKey}_startTime`);
+        localStorage.removeItem(`${persistanceKey}_elapsedTime`);
+        localStorage.removeItem(`${persistanceKey}_isRunning`);
         localStorage.removeItem(`timeEntries_${userId}`);
       } else {
-        // Fallback if currentUser was not available for some reason, clear generic if it was ever used
-        localStorage.removeItem('timeEntries');
+        // Fallback for older generic keys if necessary, though ideally not needed with user-specific keys
+        localStorage.removeItem('employeeTimeTracker_startTime');
+        localStorage.removeItem('employeeTimeTracker_elapsedTime');
+        localStorage.removeItem('employeeTimeTracker_isRunning');
+        localStorage.removeItem('timeEntries'); // Generic key if it was ever used
       }
     }
     router.push('/login');
@@ -64,13 +69,12 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-4 md:gap-6"> {/* Adjusted gap */}
+        <div className="flex items-center gap-4 md:gap-6"> 
           <Link href="/dashboard" className="flex items-center gap-2">
             <Briefcase className="h-7 w-7 text-primary" />
             <span className="text-xl font-bold tracking-tight">Crafton Time Track</span>
           </Link>
           
-          {/* Explicit Navigation Links */}
           {currentUser && (
             <nav className="hidden md:flex items-center gap-1">
               <Button asChild variant="ghost" size="sm">

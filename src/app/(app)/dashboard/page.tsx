@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { TimeTracker } from '@/components/features/TimeTracker';
 import { ManualEntryTile } from '@/components/features/ManualEntryTile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react'; // Removed Users, Download
+import { AlertTriangle } from 'lucide-react'; 
 import type { Branch, TimeEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,7 @@ const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string
   const [branch, setBranch] = useState<Branch | undefined>();
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
-  const { toast } = useToast(); // Moved toast from DashboardPage to here if it's only used here now
+  const { toast } = useToast(); 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -49,7 +49,7 @@ const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string
       window.addEventListener('storage', handleStorageChange);
       return () => window.removeEventListener('storage', handleStorageChange);
     }
-  }, [router, toast]); // Added toast to dependency array
+  }, [router, toast]); 
   return { branch, userId };
 };
 
@@ -60,7 +60,6 @@ const DashboardPage: NextPage = () => {
   const { toast } = useToast();
   const router = useRouter();
 
-  // Load time entries from localStorage on mount, specific to the current user
   useEffect(() => {
     if (typeof window !== 'undefined' && currentUserId) {
       const storedEntriesKey = `timeEntries_${currentUserId}`;
@@ -68,15 +67,13 @@ const DashboardPage: NextPage = () => {
       if (storedEntries) {
         setTimeEntries(JSON.parse(storedEntries));
       } else {
-        setTimeEntries([]); // Ensure it's an empty array if nothing stored
+        setTimeEntries([]); 
       }
     } else if (typeof window !== 'undefined' && !currentUserId) {
-        // If currentUserId becomes null (e.g. after logout from another tab), clear entries
         setTimeEntries([]);
     }
   }, [currentUserId]);
 
-  // Save time entries to localStorage whenever they change, specific to the current user
   useEffect(() => {
     if (typeof window !== 'undefined' && currentUserId) {
       const storedEntriesKey = `timeEntries_${currentUserId}`;
@@ -104,7 +101,6 @@ const DashboardPage: NextPage = () => {
     setTimeEntries(prevEntries => [...prevEntries, entryWithDetails]);
   };
 
-  // handleExportData function removed as the export tile is removed from this page.
 
   if (!currentUserId || !currentBranch) {
     return (
@@ -127,15 +123,13 @@ const DashboardPage: NextPage = () => {
       <h1 className="text-3xl font-bold tracking-tight">Time Tracking <span className="text-lg text-muted-foreground">({currentBranch})</span></h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TimeTracker currentBranch={currentBranch} onTimeEntryCreate={handleTimeEntryCreate} />
+        <TimeTracker 
+            currentBranch={currentBranch} 
+            onTimeEntryCreate={handleTimeEntryCreate} 
+            currentUserId={currentUserId} 
+        />
         <ManualEntryTile currentBranch={currentBranch} onTimeEntryCreate={handleTimeEntryCreate} />
-        
-        {/* Employee Management Card Removed */}
-        {/* Data Export Card Removed */}
       </div>
-
-      {/* ProfileOverviewTile Removed */}
-      
     </div>
   );
 };
