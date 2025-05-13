@@ -75,7 +75,7 @@ const LoginPage: NextPage = () => {
               Mitarbeiter auswählen
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-[14.5rem] overflow-y-auto pr-2"> {/* Adjusted height for approx two rows + gap, and added padding for scrollbar */}
+          <CardContent className="h-[14.5rem] overflow-y-auto pr-2">
             <div className="grid grid-cols-3 gap-3">
               {MOCK_USERS.map((user) => (
                 <Button
@@ -99,7 +99,7 @@ const LoginPage: NextPage = () => {
               Filiale auswählen
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-auto pr-2"> {/* Adjusted height and padding */}
+          <CardContent className="h-auto pr-2">
             <div className="grid grid-cols-3 gap-3">
               {BRANCHES.map((branch) => (
                 <Button
@@ -108,7 +108,7 @@ const LoginPage: NextPage = () => {
                   className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
                   onClick={() => setSelectedBranch(branch)}
                 >
-                  <Building className="w-7 h-7 mb-1.5" /> {/* Using Building icon for branches */}
+                  <Building className="w-7 h-7 mb-1.5" />
                   <span className="text-xs leading-tight">{branch}</span>
                 </Button>
               ))}
@@ -116,7 +116,7 @@ const LoginPage: NextPage = () => {
           </CardContent>
         </Card>
         
-        <Button onClick={handleLogin} className="w-full" size="lg" disabled={isLoading || !selectedUserId || !selectedBranch}>
+        <Button onClick={handleLogin} className="w-full" size="lg" disabled={isLoading}>
           {isLoading ? (
             <LogIn className="mr-2 h-5 w-5 animate-spin" />
           ) : (
