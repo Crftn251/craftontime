@@ -63,7 +63,7 @@ const LoginPage: NextPage = () => {
           <div className="mx-auto mb-4">
             <Briefcase className="h-16 w-16 text-primary" />
           </div>
-          <CardTitle className="text-3xl font-bold">Crafton Time Track</CardTitle>
+          <CardTitle className="text-3xl font-bold">Zeiterfassung</CardTitle>
           <CardDescription>Bitte wählen Sie Ihr Profil und Ihre Filiale aus, um fortzufahren.</CardDescription>
         </CardHeader>
       </Card>
