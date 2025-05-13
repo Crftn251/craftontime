@@ -116,7 +116,12 @@ const LoginPage: NextPage = () => {
           </CardContent>
         </Card>
         
-        <Button onClick={handleLogin} className="w-full" size="lg" disabled={isLoading}>
+        <Button 
+          onClick={handleLogin} 
+          className="w-full" 
+          size="lg" 
+          disabled={isLoading || !selectedUserId || !selectedBranch}
+        >
           {isLoading ? (
             <LogIn className="mr-2 h-5 w-5 animate-spin" />
           ) : (
