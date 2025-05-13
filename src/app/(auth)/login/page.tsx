@@ -76,7 +76,7 @@ const LoginPage: NextPage = () => {
               Mitarbeiter auswählen
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="h-[14.5rem] overflow-y-auto pr-2"> {/* Adjusted height for approx two rows + gap, and added padding for scrollbar */}
             <div className="grid grid-cols-3 gap-3">
               {MOCK_USERS.map((user) => (
                 <Button
@@ -130,4 +130,3 @@ const LoginPage: NextPage = () => {
 };
 
 export default LoginPage;
-
