@@ -44,23 +44,20 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
     if (typeof window !== 'undefined') {
       const userId = currentUser?.id; 
 
+      // Clear general authentication and session data
       localStorage.removeItem('loggedInUserId');
       localStorage.removeItem('loggedInUserName');
       localStorage.removeItem('selectedBranch');
       localStorage.removeItem('isAuthenticated');
       
+      // Clear user-specific time entries, but keep timer state
       if (userId) {
-        const persistanceKey = `employeeTimeTracker_${userId}`;
-        localStorage.removeItem(`${persistanceKey}_startTime`);
-        localStorage.removeItem(`${persistanceKey}_elapsedTime`);
-        localStorage.removeItem(`${persistanceKey}_isRunning`);
+        // Timer state (startTime, elapsedTime, isRunning for employeeTimeTracker_${userId})
+        // is intentionally NOT removed here to persist timer across logout/login.
         localStorage.removeItem(`timeEntries_${userId}`);
       } else {
-        // Fallback for older generic keys if necessary, though ideally not needed with user-specific keys
-        localStorage.removeItem('employeeTimeTracker_startTime');
-        localStorage.removeItem('employeeTimeTracker_elapsedTime');
-        localStorage.removeItem('employeeTimeTracker_isRunning');
-        localStorage.removeItem('timeEntries'); // Generic key if it was ever used
+        // Fallback for generic keys if they were ever used for entries
+        localStorage.removeItem('timeEntries'); 
       }
     }
     router.push('/login');
