@@ -26,14 +26,14 @@ const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string
       if (storedBranch) {
         setBranch(storedBranch);
       } else {
-        toast({ title: "Branch Error", description: "No branch selected. Please re-login.", variant: "destructive" });
+        toast({ title: "Filialfehler", description: "Keine Filiale ausgewählt. Bitte erneut anmelden.", variant: "destructive" });
         router.push('/login');
       }
 
       if (storedUserId) {
         setUserId(storedUserId);
       } else {
-        toast({ title: "User Error", description: "User not identified. Please re-login.", variant: "destructive" });
+        toast({ title: "Benutzerfehler", description: "Benutzer nicht identifiziert. Bitte erneut anmelden.", variant: "destructive" });
         router.push('/login');
       }
 
@@ -83,12 +83,12 @@ const DashboardPage: NextPage = () => {
 
   const handleTimeEntryCreate = (newEntry: Partial<TimeEntry>) => {
     if (!currentUserId) {
-      toast({ title: "Authentication Error", description: "User not identified. Please log in.", variant: "destructive" });
+      toast({ title: "Authentifizierungsfehler", description: "Benutzer nicht identifiziert. Bitte anmelden.", variant: "destructive" });
       router.push('/login');
       return;
     }
     if (!currentBranch) {
-        toast({ title: "Branch Error", description: "No branch selected. Please select a branch in the header.", variant: "destructive" });
+        toast({ title: "Filialfehler", description: "Keine Filiale ausgewählt. Bitte wählen Sie eine Filiale im Header aus.", variant: "destructive" });
         return;
     }
 
@@ -106,12 +106,12 @@ const DashboardPage: NextPage = () => {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
         <AlertTriangle className="w-16 h-16 text-destructive" />
-        <h2 className="text-2xl font-semibold">Loading User Data...</h2>
+        <h2 className="text-2xl font-semibold">Benutzerdaten werden geladen...</h2>
         <p className="text-muted-foreground">
-          If this message persists, please try logging in again.
+          Wenn diese Nachricht bestehen bleibt, versuchen Sie bitte, sich erneut anzumelden.
         </p>
         <Button onClick={() => router.push('/login')} variant="outline">
-          Go to Login
+          Zum Login
         </Button>
       </div>
     );
@@ -120,7 +120,7 @@ const DashboardPage: NextPage = () => {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold tracking-tight">Time Tracking <span className="text-lg text-muted-foreground">({currentBranch})</span></h1>
+      <h1 className="text-3xl font-bold tracking-tight">Zeiterfassung <span className="text-lg text-muted-foreground">({currentBranch})</span></h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <TimeTracker 

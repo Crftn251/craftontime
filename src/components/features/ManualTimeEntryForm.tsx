@@ -26,10 +26,10 @@ import type { TimeEntry, Branch } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 
 const manualTimeEntrySchema = z.object({
-  date: z.date({ required_error: "A date is required." }),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)."),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)."),
-  totalPauseMinutes: z.coerce.number().int().min(0, "Pause duration cannot be negative.").optional(),
+  date: z.date({ required_error: "Ein Datum ist erforderlich." }),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Ungültiges Zeitformat (HH:MM)."),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Ungültiges Zeitformat (HH:MM)."),
+  totalPauseMinutes: z.coerce.number().int().min(0, "Pausendauer darf nicht negativ sein.").optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
 }).refine(data => {
@@ -37,7 +37,7 @@ const manualTimeEntrySchema = z.object({
   const [endH, endM] = data.endTime.split(':').map(Number);
   return (endH > startH) || (endH === startH && endM > startM);
 }, {
-  message: "End time must be after start time.",
+  message: "Die Endzeit muss nach der Startzeit liegen.",
   path: ["endTime"],
 }).refine(data => {
     const [startH, startM] = data.startTime.split(':').map(Number);
@@ -45,7 +45,7 @@ const manualTimeEntrySchema = z.object({
     const totalMinutes = (endH * 60 + endM) - (startH * 60 + startM);
     return data.totalPauseMinutes === undefined || data.totalPauseMinutes <= totalMinutes;
 }, {
-    message: "Total pause duration cannot exceed total work duration.",
+    message: "Die gesamte Pausendauer darf die Gesamtarbeitszeit nicht überschreiten.",
     path: ["totalPauseMinutes"],
 });
 
@@ -75,7 +75,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
 
   const onSubmit = (values: ManualTimeEntryFormValues) => {
     if (!currentBranch) {
-      toast({ title: "Error", description: "No branch selected for manual entry.", variant: "destructive" });
+      toast({ title: "Fehler", description: "Keine Filiale für die manuelle Eingabe ausgewählt.", variant: "destructive" });
       return;
     }
 
@@ -102,7 +102,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
       reason: values.reason,
       manual: true,
     });
-    toast({ title: "Manual Entry Added", description: `Time logged for ${format(startDate, "PPP")} from ${values.startTime} to ${values.endTime}.` });
+    toast({ title: "Manueller Eintrag hinzugefügt", description: `Zeit erfasst für ${format(startDate, "PPP")} von ${values.startTime} bis ${values.endTime}.` });
     form.reset();
     onDialogClose();
   };
@@ -115,7 +115,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
           name="date"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
+              <FormLabel>Datum</FormLabel>
               <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -129,7 +129,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
                       {field.value ? (
                         format(field.value, "PPP")
                       ) : (
-                        <span>Pick a date</span>
+                        <span>Datum auswählen</span>
                       )}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
@@ -161,7 +161,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
             name="startTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Start Time</FormLabel>
+                <FormLabel>Startzeit</FormLabel>
                 <FormControl>
                   <Input type="time" {...field} />
                 </FormControl>
@@ -174,7 +174,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
             name="endTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>End Time</FormLabel>
+                <FormLabel>Endzeit</FormLabel>
                 <FormControl>
                   <Input type="time" {...field} />
                 </FormControl>
@@ -191,10 +191,10 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
               <FormItem>
                 <FormLabel className="flex items-center">
                   <ClockIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                  Total Pause Duration (minutes)
+                  Gesamte Pausendauer (Minuten)
                 </FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="e.g., 30" {...field} onChange={e => field.onChange(parseInt(e.target.value,10) || 0)} />
+                  <Input type="number" placeholder="z.B. 30" {...field} onChange={e => field.onChange(parseInt(e.target.value,10) || 0)} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -206,9 +206,9 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
           name="reason"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Reason for manual entry/adjustment (Optional)</FormLabel>
+              <FormLabel>Grund für manuelle Eingabe/Anpassung (Optional)</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Forgot to clock in" {...field} />
+                <Input placeholder="z.B. Einstempeln vergessen" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -220,17 +220,17 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes (Optional)</FormLabel>
+              <FormLabel>Notizen (Optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Additional details about the work done" {...field} />
+                <Textarea placeholder="Zusätzliche Details zur geleisteten Arbeit" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onDialogClose}>Cancel</Button>
-            <Button type="submit">Add Entry</Button>
+            <Button type="button" variant="outline" onClick={onDialogClose}>Abbrechen</Button>
+            <Button type="submit">Eintrag hinzufügen</Button>
         </div>
       </form>
     </Form>

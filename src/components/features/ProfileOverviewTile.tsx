@@ -1,3 +1,4 @@
+
 "use client";
 import type { FC } from 'react';
 import { BarChartBig, User } from 'lucide-react';
@@ -15,9 +16,9 @@ export const ProfileOverviewTile: FC<ProfileOverviewTileProps> = ({ timeEntries 
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChartBig className="w-6 h-6" />
-          Profile Overview
+          Profilübersicht
         </CardTitle>
-        <CardDescription>Your recent activity and time logged.</CardDescription>
+        <CardDescription>Ihre letzten Aktivitäten und erfassten Zeiten.</CardDescription>
       </CardHeader>
       <CardContent>
         <TimeSummaryCharts timeEntries={timeEntries} />

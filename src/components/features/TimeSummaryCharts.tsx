@@ -33,9 +33,9 @@ export const TimeSummaryCharts: FC<TimeSummaryChartsProps> = ({ timeEntries }) =
   const productiveHoursThisMonth = aggregateProductiveTime(timeEntries, startOfMonth(now), endOfMonth(now));
 
   const summaryData = [
-    { name: 'Today', hours: parseFloat(productiveHoursToday.toFixed(2)) },
-    { name: 'This Week', hours: parseFloat(productiveHoursThisWeek.toFixed(2)) },
-    { name: 'This Month', hours: parseFloat(productiveHoursThisMonth.toFixed(2)) },
+    { name: 'Heute', hours: parseFloat(productiveHoursToday.toFixed(2)) },
+    { name: 'Diese Woche', hours: parseFloat(productiveHoursThisWeek.toFixed(2)) },
+    { name: 'Dieser Monat', hours: parseFloat(productiveHoursThisMonth.toFixed(2)) },
   ];
 
   const weeklyBreakdownData = eachDayOfInterval({
@@ -45,7 +45,7 @@ export const TimeSummaryCharts: FC<TimeSummaryChartsProps> = ({ timeEntries }) =
     const dayStart = new Date(new Date(day).setHours(0,0,0,0));
     const dayEnd = new Date(new Date(day).setHours(23,59,59,999));
     return {
-      name: format(day, 'EEE'), // Mon, Tue
+      name: format(day, 'EEE'), // Mon, Tue (date-fns locale needed for German day names)
       hours: parseFloat(aggregateProductiveTime(timeEntries, dayStart, dayEnd).toFixed(2)),
     };
   });
@@ -55,8 +55,8 @@ export const TimeSummaryCharts: FC<TimeSummaryChartsProps> = ({ timeEntries }) =
     <div className="grid gap-6 md:grid-cols-2">
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <CardTitle>Productive Activity Summary</CardTitle>
-          <CardDescription>Total productive hours logged (excluding pauses).</CardDescription>
+          <CardTitle>Zusammenfassung der produktiven Aktivität</CardTitle>
+          <CardDescription>Gesamte protokollierte produktive Stunden (ohne Pausen).</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -68,7 +68,7 @@ export const TimeSummaryCharts: FC<TimeSummaryChartsProps> = ({ timeEntries }) =
                 contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)' }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
                 itemStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value: number) => [`${value.toFixed(2)}h`, "Productive Hours"]}
+                formatter={(value: number) => [`${value.toFixed(2)}h`, "Produktive Stunden"]}
               />
               <Bar dataKey="hours" radius={[4, 4, 0, 0]} maxBarSize={60}>
                 {summaryData.map((entry, index) => (
@@ -82,8 +82,8 @@ export const TimeSummaryCharts: FC<TimeSummaryChartsProps> = ({ timeEntries }) =
 
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <CardTitle>This Week's Productive Breakdown</CardTitle>
-          <CardDescription>Daily productive hours for the current week (excluding pauses).</CardDescription>
+          <CardTitle>Aufschlüsselung dieser Woche (Produktiv)</CardTitle>
+          <CardDescription>Tägliche produktive Stunden für die aktuelle Woche (ohne Pausen).</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -95,7 +95,7 @@ export const TimeSummaryCharts: FC<TimeSummaryChartsProps> = ({ timeEntries }) =
                 contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)' }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
                 itemStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value: number) => [`${value.toFixed(2)}h`, "Productive Hours"]}
+                formatter={(value: number) => [`${value.toFixed(2)}h`, "Produktive Stunden"]}
               />
               <Bar dataKey="hours" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>

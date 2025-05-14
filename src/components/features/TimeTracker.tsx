@@ -22,16 +22,16 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
 
   const handleStart = () => {
     if (!currentBranch) {
-      toast({ title: "Error", description: "Please select a branch first.", variant: "destructive" });
+      toast({ title: "Fehler", description: "Bitte wählen Sie zuerst eine Filiale aus.", variant: "destructive" });
       return;
     }
     start();
-    toast({ title: "Timer Started", description: `Tracking time for branch ${currentBranch}.` });
+    toast({ title: "Timer gestartet", description: `Zeiterfassung für Filiale ${currentBranch} gestartet.` });
   };
 
   const handlePause = () => {
     pause();
-    toast({ title: "Timer Paused" });
+    toast({ title: "Timer pausiert" });
   };
 
   const handleStop = () => {
@@ -49,17 +49,17 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
         totalPauseDuration: Math.floor(totalPauseDurationInSeconds),
         pauseIntervals: pauseIntervals,
         branch: currentBranch,
-        notes: "Automated time entry",
+        notes: "Automatisierter Zeiteintrag",
       });
-      toast({ title: "Timer Stopped", description: `Entry for ${formatTime(durationInMs)} logged for ${currentBranch}.` });
+      toast({ title: "Timer gestoppt", description: `Eintrag für ${formatTime(durationInMs)} in ${currentBranch} erfasst.` });
     } else if (durationInMs === 0) {
-        toast({ title: "Timer Stopped", description: "No time was recorded.", variant: "default" });
+        toast({ title: "Timer gestoppt", description: "Es wurde keine Zeit erfasst.", variant: "default" });
     }
   };
   
   const handleReset = () => {
     reset();
-    toast({ title: "Timer Reset", description: "Current tracking has been reset." });
+    toast({ title: "Timer zurückgesetzt", description: "Die aktuelle Zeiterfassung wurde zurückgesetzt." });
   };
 
   return (
@@ -67,7 +67,7 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Play className="w-6 h-6" />
-          Time Tracker
+          Zeitmesser
         </CardTitle>
       </CardHeader>
       <CardContent className="text-center">
@@ -85,7 +85,7 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
                 <Pause className="mr-2 h-5 w-5" /> Pause
               </Button>
               <Button onClick={handleStop} variant="destructive" size="lg" className="w-full">
-                <Square className="mr-2 h-5 w-5" /> Stop
+                <Square className="mr-2 h-5 w-5" /> Stopp
               </Button>
             </>
           )}
@@ -93,7 +93,7 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
       </CardContent>
       <CardFooter>
         <Button onClick={handleReset} variant="ghost" size="sm" className="w-full text-muted-foreground">
-            <RotateCcw className="mr-2 h-4 w-4" /> Reset Timer
+            <RotateCcw className="mr-2 h-4 w-4" /> Timer zurücksetzen
         </Button>
       </CardFooter>
     </Card>

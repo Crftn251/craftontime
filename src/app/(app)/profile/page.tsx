@@ -48,7 +48,7 @@ const ProfilePage: NextPage = () => {
               setTimeEntries([]);
             }
           } catch (e) {
-            console.error("Failed to parse time entries from localStorage", e);
+            console.error("Fehler beim Parsen der Zeiteinträge aus localStorage", e);
             setTimeEntries([]);
           }
         } else {
@@ -80,18 +80,18 @@ const ProfilePage: NextPage = () => {
   const handleExportData = () => {
     if (!user || timeEntries.length === 0) {
       toast({
-        title: "No Data to Export",
-        description: "There are no time entries to export for this user.",
+        title: "Keine Daten zum Exportieren",
+        description: "Es sind keine Zeiteinträge für diesen Benutzer zum Exportieren vorhanden.",
         variant: "default",
       });
       return;
     }
 
     const headers = [
-      "Entry ID", "User ID", "User Name", "User Email", "Branch",
-      "Date", "Start Time", "End Time",
-      "Total Duration (HH:MM:SS)", "Productive Duration (HH:MM:SS)", "Total Pause Duration (HH:MM:SS)",
-      "Pause Intervals (Start-End;...)", "Manual Entry", "Reason for Manual Entry/Adjustment", "Notes"
+      "Eintrags-ID", "Benutzer-ID", "Benutzername", "Benutzer-E-Mail", "Filiale",
+      "Datum", "Startzeit", "Endzeit",
+      "Gesamtdauer (HH:MM:SS)", "Produktive Dauer (HH:MM:SS)", "Gesamte Pausendauer (HH:MM:SS)",
+      "Pausenintervalle (Start-End;...)", "Manuelle Eingabe", "Grund für manuelle Eingabe/Anpassung", "Notizen"
     ];
 
     const csvRows = [headers.join(',')];
@@ -122,7 +122,7 @@ const ProfilePage: NextPage = () => {
         escapeCsvField(formatDurationFromSeconds(productiveDurationSec > 0 ? productiveDurationSec : 0)),
         escapeCsvField(formatDurationFromSeconds(totalPauseDurationSec)),
         escapeCsvField(pauseIntervalsString),
-        escapeCsvField(entry.manual ? 'Yes' : 'No'),
+        escapeCsvField(entry.manual ? 'Ja' : 'Nein'),
         escapeCsvField(entry.reason),
         escapeCsvField(entry.notes),
       ];
@@ -141,15 +141,15 @@ const ProfilePage: NextPage = () => {
     document.body.removeChild(link);
 
     toast({
-        title: "Data Exported",
-        description: "Time entries have been downloaded as a CSV file.",
+        title: "Daten exportiert",
+        description: "Zeiteinträge wurden als CSV-Datei heruntergeladen.",
     });
   };
 
   if (loading) {
     return (
       <div className="flex flex-1 justify-center items-center h-full">
-        <p>Loading profile...</p>
+        <p>Profil wird geladen...</p>
       </div>
     );
   }
@@ -161,15 +161,15 @@ const ProfilePage: NextPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCircle className="w-8 h-8 text-destructive" />
-              Profile Not Found
+              Profil nicht gefunden
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              User details could not be loaded. Please try logging in again.
+              Benutzerdetails konnten nicht geladen werden. Bitte versuchen Sie erneut, sich anzumelden.
             </p>
             <Button asChild className="w-full">
-              <Link href="/login">Go to Login</Link>
+              <Link href="/login">Zum Login</Link>
             </Button>
           </CardContent>
         </Card>
@@ -180,7 +180,7 @@ const ProfilePage: NextPage = () => {
   return (
     <div className="flex flex-col items-center justify-center flex-1 py-8">
       <div className="space-y-8 w-full max-w-4xl">
-        <h1 className="text-3xl font-bold tracking-tight text-center">My Profile</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-center">Mein Profil</h1>
         
         <Card className="shadow-xl">
           <CardHeader className="items-center text-center">
@@ -196,7 +196,7 @@ const ProfilePage: NextPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">
-              Time tracking overview and data export options are available below.
+              Übersicht der Zeiterfassung und Datenexportoptionen finden Sie unten.
             </p>
           </CardContent>
         </Card>
@@ -207,20 +207,20 @@ const ProfilePage: NextPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Download className="w-6 h-6" />
-              Data Export
+              Datenexport
             </CardTitle>
-            <CardDescription>Download your time tracking data as a CSV file (for Excel).</CardDescription>
+            <CardDescription>Laden Sie Ihre Zeiterfassungsdaten als CSV-Datei herunter (für Excel).</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Export all your recorded time entries, including productive time and pause details, as a CSV file. This format is easily opened in spreadsheet programs like Excel.
+              Exportieren Sie alle Ihre erfassten Zeiteinträge, einschließlich produktiver Zeit und Pausendetails, als CSV-Datei. Dieses Format lässt sich leicht in Tabellenkalkulationsprogrammen wie Excel öffnen.
             </p>
             <Button 
               className="w-full" 
               onClick={handleExportData} 
               disabled={timeEntries.length === 0}
             >
-              Export as CSV (for Excel)
+              Als CSV exportieren (für Excel)
             </Button>
           </CardContent>
         </Card>
@@ -230,4 +230,3 @@ const ProfilePage: NextPage = () => {
 };
 
 export default ProfilePage;
-

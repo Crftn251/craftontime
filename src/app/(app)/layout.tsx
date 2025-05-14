@@ -41,13 +41,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const handleBranchChange = (branch: Branch) => {
     // Logic for branch change if needed, e.g., re-fetch data specific to branch
     // For now, it's mostly handled by BranchSelector itself updating localStorage
-    console.log("Branch changed to:", branch);
+    console.log("Filiale gewechselt zu:", branch);
   };
 
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p>Loading user session...</p>
+        <p>Benutzersitzung wird geladen...</p>
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
      // but it's a safeguard.
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Redirecting to login...</p>
+            <p>Weiterleitung zum Login...</p>
         </div>
     );
   }

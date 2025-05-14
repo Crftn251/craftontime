@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 // Geist fonts are fine, but prompt asked for Inter in globals.css so ensuring consistency.
 // For this case, I'll keep Geist as specified in original, but note the globals.css addition.
@@ -16,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Crafton Time Track',
-  description: 'Time tracking application for Crafton employees',
+  title: 'Crafton Zeiterfassung',
+  description: 'Zeiterfassungsanwendung für Crafton Mitarbeiter',
 };
 
 export default function RootLayout({
@@ -26,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning={true}><body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+    <html lang="de" suppressHydrationWarning={true}><body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         {children}
         <Toaster /> {/* Global Toaster */}
       </body></html>

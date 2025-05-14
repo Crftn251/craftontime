@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -73,7 +74,7 @@ export const BranchSelector: FC<BranchSelectorProps> = ({ defaultBranch, onBranc
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="lg" className="w-[150px] justify-between">
-          {selectedBranch || "Select Branch"}
+          {selectedBranch || "Filiale wählen"}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </DropdownMenuTrigger>

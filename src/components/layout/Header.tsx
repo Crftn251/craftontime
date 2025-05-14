@@ -40,7 +40,7 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
       //     localStorage.removeItem(key);
       //   }
       // });
-      toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
+      toast({ title: 'Abgemeldet', description: 'Sie wurden erfolgreich abgemeldet.' });
       router.push('/login');
     }
   };

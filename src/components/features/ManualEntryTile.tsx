@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -29,8 +30,8 @@ export const ManualEntryTile: FC<ManualEntryTileProps> = ({ currentBranch, onTim
   const handleOpenChange = (open: boolean) => {
     if (open && !currentBranch) {
         toast({
-            title: "Select a Branch",
-            description: "Please select a branch before adding a manual time entry.",
+            title: "Filiale auswählen",
+            description: "Bitte wählen Sie eine Filiale aus, bevor Sie einen manuellen Zeiteintrag hinzufügen.",
             variant: "destructive",
         });
         return; // Prevent dialog from opening
@@ -43,25 +44,25 @@ export const ManualEntryTile: FC<ManualEntryTileProps> = ({ currentBranch, onTim
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarPlus className="w-6 h-6" />
-          Manual Time Entry
+          Manuelle Zeiteingabe
         </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-4">
-          Manually add or adjust time entries for specific dates and times.
+          Manuelles Hinzufügen oder Anpassen von Zeiteinträgen für bestimmte Daten und Zeiten.
         </p>
         <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="w-full" variant="outline">
-              Add/Adjust Entry
+              Eintrag hinzufügen/anpassen
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
-              <DialogTitle>Manual Time Entry</DialogTitle>
+              <DialogTitle>Manuelle Zeiteingabe</DialogTitle>
               <DialogDescription>
-                Fill in the details for your time entry. Ensure the selected branch is correct.
-                Current branch: <span className="font-semibold">{currentBranch || "None selected"}</span>
+                Füllen Sie die Details für Ihren Zeiteintrag aus. Stellen Sie sicher, dass die ausgewählte Filiale korrekt ist.
+                Aktuelle Filiale: <span className="font-semibold">{currentBranch || "Keine ausgewählt"}</span>
               </DialogDescription>
             </DialogHeader>
             {currentBranch && (
@@ -73,7 +74,7 @@ export const ManualEntryTile: FC<ManualEntryTileProps> = ({ currentBranch, onTim
             )}
             {!currentBranch && (
                 <div className="p-4 text-center text-destructive-foreground bg-destructive rounded-md">
-                    Please select a branch from the header before making a manual entry.
+                    Bitte wählen Sie eine Filiale im Header aus, bevor Sie einen manuellen Eintrag vornehmen.
                 </div>
             )}
           </DialogContent>
