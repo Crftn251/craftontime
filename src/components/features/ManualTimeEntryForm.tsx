@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from 'react';
@@ -18,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ClockIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import type { TimeEntry, Branch } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,7 @@ const manualTimeEntrySchema = z.object({
   date: z.date({ required_error: "A date is required." }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)."),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time format (HH:MM)."),
+  totalPauseMinutes: z.coerce.number().int().min(0, "Pause duration cannot be negative.").optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
 }).refine(data => {
@@ -36,6 +38,14 @@ const manualTimeEntrySchema = z.object({
 }, {
   message: "End time must be after start time.",
   path: ["endTime"],
+}).refine(data => {
+    const [startH, startM] = data.startTime.split(':').map(Number);
+    const [endH, endM] = data.endTime.split(':').map(Number);
+    const totalMinutes = (endH * 60 + endM) - (startH * 60 + startM);
+    return data.totalPauseMinutes === undefined || data.totalPauseMinutes <= totalMinutes;
+}, {
+    message: "Total pause duration cannot exceed total work duration.",
+    path: ["totalPauseMinutes"],
 });
 
 type ManualTimeEntryFormValues = z.infer<typeof manualTimeEntrySchema>;
@@ -54,6 +64,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
       date: new Date(),
       startTime: "09:00",
       endTime: "17:00",
+      totalPauseMinutes: 0,
       reason: "",
       notes: "",
     },
@@ -75,11 +86,14 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
     endDate.setHours(endHours, endMinutes, 0, 0);
 
     const durationInSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
+    const totalPauseDurationInSeconds = (values.totalPauseMinutes || 0) * 60;
 
     onEntrySubmit({
       startTime: startDate.getTime(),
       endTime: endDate.getTime(),
       duration: durationInSeconds,
+      totalPauseDuration: totalPauseDurationInSeconds,
+      pauseIntervals: [], // Manual entries won't have detailed intervals unless a more complex UI is built
       branch: currentBranch,
       notes: values.notes,
       reason: values.reason,
@@ -163,6 +177,23 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
             )}
           />
         </div>
+
+        <FormField
+            control={form.control}
+            name="totalPauseMinutes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center">
+                  <ClockIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                  Total Pause Duration (minutes)
+                </FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="e.g., 30" {...field} onChange={e => field.onChange(parseInt(e.target.value,10) || 0)} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
         <FormField
           control={form.control}

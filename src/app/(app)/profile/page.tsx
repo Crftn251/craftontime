@@ -5,7 +5,7 @@ import type { NextPage } from 'next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserCircle, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { UserProfile, TimeEntry } from '@/lib/types';
+import type { UserProfile, TimeEntry, PauseInterval } from '@/lib/types';
 import { MOCK_USERS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -29,9 +29,21 @@ const ProfilePage: NextPage = () => {
         const storedEntries = localStorage.getItem(storedEntriesKey);
         if (storedEntries) {
           try {
-            const parsedEntries = JSON.parse(storedEntries);
+            const parsedEntries = JSON.parse(storedEntries) as TimeEntry[];
             if (Array.isArray(parsedEntries)) {
-              setTimeEntries(parsedEntries);
+              // Ensure timestamps are numbers, not strings from old data
+              const sanitizedEntries = parsedEntries.map(entry => ({
+                ...entry,
+                startTime: Number(entry.startTime),
+                endTime: entry.endTime ? Number(entry.endTime) : undefined,
+                duration: entry.duration ? Number(entry.duration) : undefined,
+                totalPauseDuration: entry.totalPauseDuration ? Number(entry.totalPauseDuration) : 0,
+                pauseIntervals: Array.isArray(entry.pauseIntervals) ? entry.pauseIntervals.map(pi => ({
+                    startTime: Number(pi.startTime),
+                    endTime: Number(pi.endTime),
+                })) : [],
+              }));
+              setTimeEntries(sanitizedEntries);
             } else {
               setTimeEntries([]);
             }
@@ -67,6 +79,10 @@ const ProfilePage: NextPage = () => {
         ...entry,
         startTime: new Date(entry.startTime).toISOString(),
         endTime: entry.endTime ? new Date(entry.endTime).toISOString() : undefined,
+        pauseIntervals: entry.pauseIntervals?.map(pi => ({
+            startTime: new Date(pi.startTime).toISOString(),
+            endTime: new Date(pi.endTime).toISOString(),
+        })) || [],
       })),
       exportedAt: new Date().toISOString(),
     };
@@ -151,7 +167,7 @@ const ProfilePage: NextPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Export all your recorded time entries as a JSON file.
+              Export all your recorded time entries as a JSON file. This includes total duration, pause durations, and detailed pause intervals.
             </p>
             <Button 
               className="w-full" 

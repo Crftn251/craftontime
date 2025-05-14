@@ -6,7 +6,7 @@ import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useStopwatch } from '@/lib/hooks/useStopwatch';
-import type { Branch, TimeEntry } from '@/lib/types';
+import type { Branch, TimeEntry, PauseInterval } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
 
 interface TimeTrackerProps {
@@ -35,12 +35,19 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
   };
 
   const handleStop = () => {
-    const durationInMs = stop(); // stop() now returns duration and resets timer
+    const { duration: durationInMs, pauseIntervals } = stop(); 
+    
     if (currentBranch && durationInMs > 0) {
+      const totalPauseDurationInSeconds = pauseIntervals.reduce((acc, interval) => {
+        return acc + (interval.endTime - interval.startTime);
+      }, 0) / 1000;
+
       onTimeEntryCreate({
-        startTime: Date.now() - durationInMs, // Approximate start time
+        startTime: Date.now() - durationInMs, 
         endTime: Date.now(),
-        duration: Math.floor(durationInMs / 1000), // duration in seconds
+        duration: Math.floor(durationInMs / 1000), // Total duration including pauses
+        totalPauseDuration: Math.floor(totalPauseDurationInSeconds),
+        pauseIntervals: pauseIntervals,
         branch: currentBranch,
         notes: "Automated time entry",
       });
@@ -48,7 +55,6 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
     } else if (durationInMs === 0) {
         toast({ title: "Timer Stopped", description: "No time was recorded.", variant: "default" });
     }
-    // Timer is reset by stop()
   };
   
   const handleReset = () => {

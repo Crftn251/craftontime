@@ -1,17 +1,25 @@
+
 export type Branch = "SPZ" | "J&C" | "SPW" | "SPR" | "TAL";
 
 export const BRANCHES: Branch[] = ["SPZ", "J&C", "SPW", "SPR", "TAL"];
+
+export interface PauseInterval {
+  startTime: number; // Timestamp
+  endTime: number;   // Timestamp
+}
 
 export interface TimeEntry {
   id: string;
   startTime: number; // Store as timestamp for easier calculations
   endTime?: number; // Optional if entry is ongoing
-  duration?: number; // in seconds, calculated on stop or manual entry
+  duration?: number; // in seconds, calculated on stop or manual entry (total duration including pauses)
   branch: Branch;
   notes?: string;
   userId: string; // User identification
   manual?: boolean; // Indicates if entry was manual
   reason?: string; // Reason for manual adjustment
+  totalPauseDuration?: number; // in seconds
+  pauseIntervals?: PauseInterval[];
 }
 
 // Represents a user profile for selection and display

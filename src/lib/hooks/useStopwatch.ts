@@ -1,11 +1,11 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { PauseInterval } from '@/lib/types';
 
 // Helper to safely get value from localStorage
 const getLocalStorageValue = <T,>(key: string, defaultValue: T): T => {
-  // This function is called during useState initialization,
-  // so it needs to be robust for server-side execution where localStorage is not available.
   if (typeof window === 'undefined') {
     return defaultValue;
   }
@@ -31,47 +31,41 @@ const setLocalStorageValue = <T,>(key: string, value: T) => {
 };
 
 export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
-  // Initialize with server-side defaults to prevent hydration mismatch
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [isHydrated, setIsHydrated] = useState<boolean>(false); // To track client-side hydration
+  const [currentPauseStartTime, setCurrentPauseStartTime] = useState<number | null>(null);
+  const [sessionPauseIntervals, setSessionPauseIntervals] = useState<PauseInterval[]>([]);
+  const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to load persisted state from localStorage on the client after hydration
   useEffect(() => {
-    // Ensure this only runs on the client
     if (typeof window !== 'undefined') {
-      const storedStartTime = getLocalStorageValue<number | null>(`${persistanceKey}_startTime`, null);
-      const storedElapsedTime = getLocalStorageValue<number>(`${persistanceKey}_elapsedTime`, 0);
-      const storedIsRunning = getLocalStorageValue<boolean>(`${persistanceKey}_isRunning`, false);
-
-      setStartTime(storedStartTime);
-      setElapsedTime(storedElapsedTime);
-      setIsRunning(storedIsRunning);
-      
-      setIsHydrated(true); // Signal that client-side state is loaded
+      setStartTime(getLocalStorageValue<number | null>(`${persistanceKey}_startTime`, null));
+      setElapsedTime(getLocalStorageValue<number>(`${persistanceKey}_elapsedTime`, 0));
+      setIsRunning(getLocalStorageValue<boolean>(`${persistanceKey}_isRunning`, false));
+      setCurrentPauseStartTime(getLocalStorageValue<number | null>(`${persistanceKey}_currentPauseStartTime`, null));
+      setSessionPauseIntervals(getLocalStorageValue<PauseInterval[]>(`${persistanceKey}_sessionPauseIntervals`, []));
+      setIsHydrated(true);
     }
   }, [persistanceKey]);
 
-
-  // Effect to save state to localStorage whenever it changes, but only after hydration
   useEffect(() => {
-    if (isHydrated) { // Only persist after initial state is loaded from localStorage
+    if (isHydrated) {
       setLocalStorageValue(`${persistanceKey}_startTime`, startTime);
       setLocalStorageValue(`${persistanceKey}_elapsedTime`, elapsedTime);
       setLocalStorageValue(`${persistanceKey}_isRunning`, isRunning);
+      setLocalStorageValue(`${persistanceKey}_currentPauseStartTime`, currentPauseStartTime);
+      setLocalStorageValue(`${persistanceKey}_sessionPauseIntervals`, sessionPauseIntervals);
     }
-  }, [startTime, elapsedTime, isRunning, persistanceKey, isHydrated]);
+  }, [startTime, elapsedTime, isRunning, currentPauseStartTime, sessionPauseIntervals, persistanceKey, isHydrated]);
 
-  // Effect to handle the stopwatch interval
   useEffect(() => {
-    // Only run the interval logic if hydrated and running with a valid start time
     if (isHydrated && isRunning && startTime !== null) {
       intervalRef.current = setInterval(() => {
         setElapsedTime(Date.now() - startTime);
-      }, 100); // Update every 100ms for smoother display
+      }, 100);
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -86,44 +80,56 @@ export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
   }, [isRunning, startTime, isHydrated]);
 
   const start = useCallback(() => {
-    if (!isHydrated) return; // Don't allow actions before hydration
-    if (!isRunning) {
-      // If elapsedTime is > 0, it means we are resuming.
-      // If elapsedTime is 0, it's a fresh start.
-      const newStartTime = Date.now() - elapsedTime;
-      setStartTime(newStartTime);
-      setIsRunning(true);
+    if (!isHydrated) return;
+    
+    if (currentPauseStartTime) { // Resuming from a pause
+      const pauseEndTime = Date.now();
+      const newInterval: PauseInterval = { startTime: currentPauseStartTime, endTime: pauseEndTime };
+      setSessionPauseIntervals(prevIntervals => [...prevIntervals, newInterval]);
+      setCurrentPauseStartTime(null);
     }
-  }, [isRunning, elapsedTime, isHydrated]);
+    
+    // Adjust startTime to account for the elapsedTime already accrued
+    setStartTime(Date.now() - elapsedTime); 
+    setIsRunning(true);
+  }, [isHydrated, currentPauseStartTime, elapsedTime]);
 
   const pause = useCallback(() => {
-    if (!isHydrated) return;
-    if (isRunning) {
-      setIsRunning(false);
-      // intervalRef clearing is handled by the interval useEffect
-      // elapsedTime is already up-to-date due to the interval when it was running
-    }
-  }, [isRunning, isHydrated]);
+    if (!isHydrated || !isRunning) return;
+    setIsRunning(false); // This will stop the interval via useEffect
+    setCurrentPauseStartTime(Date.now());
+    // elapsedTime is already up-to-date from the interval
+  }, [isHydrated, isRunning]);
 
   const stop = useCallback(() => {
-    if (!isHydrated) return 0; // Return a default or handle appropriately
+    if (!isHydrated) return { duration: 0, pauseIntervals: [] };
     
     const finalElapsedTime = isRunning && startTime !== null ? Date.now() - startTime : elapsedTime;
-    
+    let finalPauseIntervals = [...sessionPauseIntervals];
+
+    if (!isRunning && currentPauseStartTime) { // Stopped while in a paused state
+      finalPauseIntervals.push({ startTime: currentPauseStartTime, endTime: Date.now() });
+    }
+
+    const returnedIntervals = [...finalPauseIntervals];
+
+    // Reset state
     setIsRunning(false);
     setStartTime(null);
     setElapsedTime(0);
-    // intervalRef clearing is handled by the interval useEffect
-
-    return finalElapsedTime; // Return the duration in ms
-  }, [isRunning, startTime, elapsedTime, isHydrated]);
+    setCurrentPauseStartTime(null);
+    setSessionPauseIntervals([]);
+    
+    return { duration: finalElapsedTime, pauseIntervals: returnedIntervals };
+  }, [isHydrated, isRunning, startTime, elapsedTime, currentPauseStartTime, sessionPauseIntervals]);
 
   const reset = useCallback(() => {
     if (!isHydrated) return;
     setIsRunning(false);
     setStartTime(null);
     setElapsedTime(0);
-    // intervalRef clearing is handled by the interval useEffect
+    setCurrentPauseStartTime(null);
+    setSessionPauseIntervals([]);
   }, [isHydrated]);
 
   const formatTime = (timeInMs: number): string => {
@@ -134,7 +140,6 @@ export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  // Return values that reflect server defaults until hydration is complete
   return { 
     elapsedTime: isHydrated ? elapsedTime : 0, 
     isRunning: isHydrated ? isRunning : false, 
@@ -143,6 +148,6 @@ export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
     stop, 
     reset, 
     formatTime,
-    isHydrated // Consumers can use this if they need to show a loading state
+    isHydrated
   };
 };
