@@ -5,7 +5,7 @@ import type { NextPage } from 'next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { UserCircle, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { UserProfile, TimeEntry, PauseInterval } from '@/lib/types';
+import type { UserProfile, TimeEntry, PauseInterval, ActivityType } from '@/lib/types';
 import { MOCK_USERS } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -42,6 +42,8 @@ const ProfilePage: NextPage = () => {
                     startTime: Number(pi.startTime),
                     endTime: Number(pi.endTime),
                 })) : [],
+                activityType: entry.activityType as ActivityType | undefined,
+                customActivityDescription: entry.customActivityDescription,
               }));
               setTimeEntries(sanitizedEntries);
             } else {
@@ -91,7 +93,8 @@ const ProfilePage: NextPage = () => {
       "Eintrags-ID", "Benutzer-ID", "Benutzername", "Benutzer-E-Mail", "Filiale",
       "Datum", "Startzeit", "Endzeit",
       "Gesamtdauer (HH:MM:SS)", "Produktive Dauer (HH:MM:SS)", "Gesamte Pausendauer (HH:MM:SS)",
-      "Pausenintervalle (Start-End;...)", "Manuelle Eingabe", "Grund für manuelle Eingabe/Anpassung", "Notizen"
+      "Pausenintervalle (Start-End;...)", "Manuelle Eingabe", "Grund für manuelle Eingabe/Anpassung", "Notizen",
+      "Tätigkeitstyp", "Eigene Tätigkeitsbeschreibung"
     ];
 
     const csvRows = [headers.join(',')];
@@ -106,7 +109,7 @@ const ProfilePage: NextPage = () => {
       const productiveDurationSec = totalDurationSec - totalPauseDurationSec;
 
       const pauseIntervalsString = (entry.pauseIntervals || [])
-        .map(pi => `${format(new Date(pi.startTime), "HH:mm:ss")}-${format(new Date(pi.endTime), "HH:mm:ss")}`)
+        .map(pi => `${format(new Date(pi.startTime), "HH:mm:ss")}-${pi.endTime ? format(new Date(pi.endTime), "HH:mm:ss") : 'laufend'}`)
         .join('; ');
 
       const row = [
@@ -125,16 +128,18 @@ const ProfilePage: NextPage = () => {
         escapeCsvField(entry.manual ? 'Ja' : 'Nein'),
         escapeCsvField(entry.reason),
         escapeCsvField(entry.notes),
+        escapeCsvField(entry.activityType),
+        escapeCsvField(entry.customActivityDescription),
       ];
       csvRows.push(row.join(','));
     });
 
     const csvString = csvRows.join('\n');
-    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // Added BOM for Excel
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `time_entries_${user.id}_${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.setAttribute("download", `zeiteintraege_${user.id}_${format(new Date(), "yyyy-MM-dd")}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -213,7 +218,7 @@ const ProfilePage: NextPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Exportieren Sie alle Ihre erfassten Zeiteinträge, einschließlich produktiver Zeit und Pausendetails, als CSV-Datei. Dieses Format lässt sich leicht in Tabellenkalkulationsprogrammen wie Excel öffnen.
+              Exportieren Sie alle Ihre erfassten Zeiteinträge, einschließlich produktiver Zeit, Pausendetails und Tätigkeitsart, als CSV-Datei. Dieses Format lässt sich leicht in Tabellenkalkulationsprogrammen wie Excel öffnen.
             </p>
             <Button 
               className="w-full" 

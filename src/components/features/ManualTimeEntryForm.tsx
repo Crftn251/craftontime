@@ -19,17 +19,23 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, ClockIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import type { TimeEntry, Branch } from '@/lib/types';
+import type { TimeEntry, Branch, ActivityType } from '@/lib/types';
+import { PREDEFINED_ACTIVITIES } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+
+const activityTypesForForm: ActivityType[] = ["Keine Angabe", ...PREDEFINED_ACTIVITIES, "Eigenes"];
 
 const manualTimeEntrySchema = z.object({
   date: z.date({ required_error: "Ein Datum ist erforderlich." }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Ungültiges Zeitformat (HH:MM)."),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Ungültiges Zeitformat (HH:MM)."),
   totalPauseMinutes: z.coerce.number().int().min(0, "Pausendauer darf nicht negativ sein.").optional(),
+  activityType: z.custom<ActivityType>().optional(),
+  customActivityDescription: z.string().optional(),
   reason: z.string().optional(),
   notes: z.string().optional(),
 }).refine(data => {
@@ -47,6 +53,14 @@ const manualTimeEntrySchema = z.object({
 }, {
     message: "Die gesamte Pausendauer darf die Gesamtarbeitszeit nicht überschreiten.",
     path: ["totalPauseMinutes"],
+}).refine(data => {
+  if (data.activityType === "Eigenes" && (!data.customActivityDescription || data.customActivityDescription.trim() === "")) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Bei 'Eigene Tätigkeit' muss eine Beschreibung angegeben werden.",
+  path: ["customActivityDescription"],
 });
 
 type ManualTimeEntryFormValues = z.infer<typeof manualTimeEntrySchema>;
@@ -68,10 +82,14 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
       startTime: "09:00",
       endTime: "17:00",
       totalPauseMinutes: 0,
+      activityType: "Keine Angabe",
+      customActivityDescription: "",
       reason: "",
       notes: "",
     },
   });
+
+  const watchedActivityType = form.watch("activityType");
 
   const onSubmit = (values: ManualTimeEntryFormValues) => {
     if (!currentBranch) {
@@ -96,11 +114,13 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
       endTime: endDate.getTime(),
       duration: durationInSeconds,
       totalPauseDuration: totalPauseDurationInSeconds,
-      pauseIntervals: [], 
+      pauseIntervals: totalPauseDurationInSeconds > 0 ? [{startTime: startDate.getTime(), endTime: startDate.getTime() + totalPauseDurationInSeconds * 1000}] : [], // Simplified for manual entry
       branch: currentBranch,
       notes: values.notes,
       reason: values.reason,
       manual: true,
+      activityType: values.activityType === "Keine Angabe" ? undefined : values.activityType,
+      customActivityDescription: values.activityType === "Eigenes" ? values.customActivityDescription : undefined,
     });
     toast({ title: "Manueller Eintrag hinzugefügt", description: `Zeit erfasst für ${format(startDate, "PPP")} von ${values.startTime} bis ${values.endTime}.` });
     form.reset();
@@ -135,7 +155,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[200]" align="start"> {/* Erhöhter z-Index */}
+                <PopoverContent className="w-auto p-0 z-[200]" align="start">
                   <Calendar
                     mode="single"
                     selected={field.value}
@@ -200,6 +220,46 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
               </FormItem>
             )}
           />
+        
+        <FormField
+          control={form.control}
+          name="activityType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tätigkeitstyp</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tätigkeit auswählen" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {activityTypesForForm.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {watchedActivityType === "Eigenes" && (
+          <FormField
+            control={form.control}
+            name="customActivityDescription"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Eigene Tätigkeitsbeschreibung</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Beschreiben Sie Ihre Tätigkeit..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
 
         <FormField
           control={form.control}
@@ -236,5 +296,3 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
     </Form>
   );
 };
-
-    

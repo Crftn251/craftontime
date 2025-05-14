@@ -8,6 +8,10 @@ export interface PauseInterval {
   endTime: number;   // Timestamp
 }
 
+export type ActivityType = "Ordnung" | "Verkauf" | "OLS" | "Eigenes" | "Keine Angabe";
+export const PREDEFINED_ACTIVITIES: Exclude<ActivityType, "Eigenes" | "Keine Angabe">[] = ["Ordnung", "Verkauf", "OLS"];
+
+
 export interface TimeEntry {
   id: string;
   startTime: number; // Store as timestamp for easier calculations
@@ -20,6 +24,8 @@ export interface TimeEntry {
   reason?: string; // Reason for manual adjustment
   totalPauseDuration?: number; // in seconds
   pauseIntervals?: PauseInterval[];
+  activityType?: ActivityType;
+  customActivityDescription?: string;
 }
 
 // Represents a user profile for selection and display
