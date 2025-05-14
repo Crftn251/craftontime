@@ -34,12 +34,12 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
       localStorage.removeItem('selectedBranch');
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('loggedInUserName');
-      // Clear individual stopwatch states for all users - this might be broad but ensures cleanup
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('employeeTimeTracker_')) {
-          localStorage.removeItem(key);
-        }
-      });
+      // DO NOT clear individual stopwatch states here to allow persistence across sessions
+      // Object.keys(localStorage).forEach(key => {
+      //   if (key.startsWith('employeeTimeTracker_')) {
+      //     localStorage.removeItem(key);
+      //   }
+      // });
       toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
       router.push('/login');
     }
