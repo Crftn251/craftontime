@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ProfileOverviewTile } from '@/components/features/ProfileOverviewTile';
 import { useToast } from "@/hooks/use-toast";
+import { format } from 'date-fns';
 
 const ProfilePage: NextPage = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -31,7 +32,6 @@ const ProfilePage: NextPage = () => {
           try {
             const parsedEntries = JSON.parse(storedEntries) as TimeEntry[];
             if (Array.isArray(parsedEntries)) {
-              // Ensure timestamps are numbers, not strings from old data
               const sanitizedEntries = parsedEntries.map(entry => ({
                 ...entry,
                 startTime: Number(entry.startTime),
@@ -59,6 +59,24 @@ const ProfilePage: NextPage = () => {
     }
   }, []);
 
+  const formatDurationFromSeconds = (totalSeconds: number | undefined): string => {
+    if (totalSeconds === undefined || isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const escapeCsvField = (field: any): string => {
+    if (field === null || field === undefined) return '';
+    let stringField = String(field);
+    if (stringField.search(/("|,|\n)/g) >= 0) {
+      stringField = stringField.replace(/"/g, '""');
+      stringField = `"${stringField}"`;
+    }
+    return stringField;
+  };
+
   const handleExportData = () => {
     if (!user || timeEntries.length === 0) {
       toast({
@@ -69,34 +87,62 @@ const ProfilePage: NextPage = () => {
       return;
     }
 
-    const dataToExport = {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-      timeEntries: timeEntries.map(entry => ({
-        ...entry,
-        startTime: new Date(entry.startTime).toISOString(),
-        endTime: entry.endTime ? new Date(entry.endTime).toISOString() : undefined,
-        pauseIntervals: entry.pauseIntervals?.map(pi => ({
-            startTime: new Date(pi.startTime).toISOString(),
-            endTime: new Date(pi.endTime).toISOString(),
-        })) || [],
-      })),
-      exportedAt: new Date().toISOString(),
-    };
+    const headers = [
+      "Entry ID", "User ID", "User Name", "User Email", "Branch",
+      "Date", "Start Time", "End Time",
+      "Total Duration (HH:MM:SS)", "Productive Duration (HH:MM:SS)", "Total Pause Duration (HH:MM:SS)",
+      "Pause Intervals (Start-End;...)", "Manual Entry", "Reason for Manual Entry/Adjustment", "Notes"
+    ];
 
-    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(dataToExport, null, 2)
-    )}`;
+    const csvRows = [headers.join(',')];
+
+    timeEntries.forEach(entry => {
+      const entryDate = entry.startTime ? format(new Date(entry.startTime), "yyyy-MM-dd") : '';
+      const entryStartTime = entry.startTime ? format(new Date(entry.startTime), "HH:mm:ss") : '';
+      const entryEndTime = entry.endTime ? format(new Date(entry.endTime), "HH:mm:ss") : '';
+      
+      const totalDurationSec = entry.duration || 0;
+      const totalPauseDurationSec = entry.totalPauseDuration || 0;
+      const productiveDurationSec = totalDurationSec - totalPauseDurationSec;
+
+      const pauseIntervalsString = (entry.pauseIntervals || [])
+        .map(pi => `${format(new Date(pi.startTime), "HH:mm:ss")}-${format(new Date(pi.endTime), "HH:mm:ss")}`)
+        .join('; ');
+
+      const row = [
+        escapeCsvField(entry.id),
+        escapeCsvField(user.id),
+        escapeCsvField(user.name),
+        escapeCsvField(user.email),
+        escapeCsvField(entry.branch),
+        escapeCsvField(entryDate),
+        escapeCsvField(entryStartTime),
+        escapeCsvField(entryEndTime),
+        escapeCsvField(formatDurationFromSeconds(totalDurationSec)),
+        escapeCsvField(formatDurationFromSeconds(productiveDurationSec > 0 ? productiveDurationSec : 0)),
+        escapeCsvField(formatDurationFromSeconds(totalPauseDurationSec)),
+        escapeCsvField(pauseIntervalsString),
+        escapeCsvField(entry.manual ? 'Yes' : 'No'),
+        escapeCsvField(entry.reason),
+        escapeCsvField(entry.notes),
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.href = jsonString;
-    link.download = `time_entries_${user.id}_${new Date().toISOString().split('T')[0]}.json`;
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `time_entries_${user.id}_${format(new Date(), "yyyy-MM-dd")}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
+
     toast({
         title: "Data Exported",
-        description: "Time entries have been downloaded as a JSON file.",
+        description: "Time entries have been downloaded as a CSV file.",
     });
   };
 
@@ -163,18 +209,18 @@ const ProfilePage: NextPage = () => {
               <Download className="w-6 h-6" />
               Data Export
             </CardTitle>
-            <CardDescription>Download your time tracking data.</CardDescription>
+            <CardDescription>Download your time tracking data as a CSV file (for Excel).</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Export all your recorded time entries as a JSON file. This includes total duration, pause durations, and detailed pause intervals.
+              Export all your recorded time entries, including productive time and pause details, as a CSV file. This format is easily opened in spreadsheet programs like Excel.
             </p>
             <Button 
               className="w-full" 
               onClick={handleExportData} 
               disabled={timeEntries.length === 0}
             >
-              Export My Data
+              Export as CSV (for Excel)
             </Button>
           </CardContent>
         </Card>
@@ -184,3 +230,4 @@ const ProfilePage: NextPage = () => {
 };
 
 export default ProfilePage;
+
