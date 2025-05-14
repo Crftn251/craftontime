@@ -2,6 +2,7 @@
 "use client";
 
 import type { FC } from 'react';
+import { useState } from 'react'; // Added for popover state
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -58,6 +59,8 @@ interface ManualTimeEntryFormProps {
 
 export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranch, onEntrySubmit, onDialogClose }) => {
   const { toast } = useToast();
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false); // State for calendar popover
+
   const form = useForm<ManualTimeEntryFormValues>({
     resolver: zodResolver(manualTimeEntrySchema),
     defaultValues: {
@@ -93,7 +96,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
       endTime: endDate.getTime(),
       duration: durationInSeconds,
       totalPauseDuration: totalPauseDurationInSeconds,
-      pauseIntervals: [], // Manual entries won't have detailed intervals unless a more complex UI is built
+      pauseIntervals: [], 
       branch: currentBranch,
       notes: values.notes,
       reason: values.reason,
@@ -113,7 +116,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Date</FormLabel>
-              <Popover>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -132,11 +135,14 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[60]" align="start"> {/* Increased z-index */}
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
+                    onSelect={(date) => {
+                      field.onChange(date);
+                      setIsCalendarOpen(false); // Close popover on select
+                    }}
                     disabled={(date) =>
                       date > new Date() || date < new Date("1900-01-01")
                     }
