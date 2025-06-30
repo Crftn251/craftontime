@@ -90,44 +90,30 @@ const ProfilePage: NextPage = () => {
     }
 
     const headers = [
-      "Eintrags-ID", "Benutzer-ID", "Benutzername", "Benutzer-E-Mail", "Filiale",
-      "Datum", "Startzeit", "Endzeit",
-      "Gesamtdauer (HH:MM:SS)", "Produktive Dauer (HH:MM:SS)", "Gesamte Pausendauer (HH:MM:SS)",
-      "Pausenintervalle (Start-End;...)", "Manuelle Eingabe", "Grund für manuelle Eingabe/Anpassung", "Notizen",
-      "Tätigkeitstyp", "Eigene Tätigkeitsbeschreibung"
+      "Filiale",
+      "Datum",
+      "Gesamtdauer (HH:MM:SS)",
+      "Produktive Dauer (HH:MM:SS)",
+      "Gesamte Pausendauer (HH:MM:SS)",
+      "Tätigkeitstyp",
+      "Eigene Tätigkeitsbeschreibung"
     ];
 
     const csvRows = [headers.join(',')];
 
     timeEntries.forEach(entry => {
       const entryDate = entry.startTime ? format(new Date(entry.startTime), "yyyy-MM-dd") : '';
-      const entryStartTime = entry.startTime ? format(new Date(entry.startTime), "HH:mm:ss") : '';
-      const entryEndTime = entry.endTime ? format(new Date(entry.endTime), "HH:mm:ss") : '';
       
       const totalDurationSec = entry.duration || 0;
       const totalPauseDurationSec = entry.totalPauseDuration || 0;
       const productiveDurationSec = totalDurationSec - totalPauseDurationSec;
 
-      const pauseIntervalsString = (entry.pauseIntervals || [])
-        .map(pi => `${format(new Date(pi.startTime), "HH:mm:ss")}-${pi.endTime ? format(new Date(pi.endTime), "HH:mm:ss") : 'laufend'}`)
-        .join('; ');
-
       const row = [
-        escapeCsvField(entry.id),
-        escapeCsvField(user.id),
-        escapeCsvField(user.name),
-        escapeCsvField(user.email),
         escapeCsvField(entry.branch),
         escapeCsvField(entryDate),
-        escapeCsvField(entryStartTime),
-        escapeCsvField(entryEndTime),
         escapeCsvField(formatDurationFromSeconds(totalDurationSec)),
         escapeCsvField(formatDurationFromSeconds(productiveDurationSec > 0 ? productiveDurationSec : 0)),
         escapeCsvField(formatDurationFromSeconds(totalPauseDurationSec)),
-        escapeCsvField(pauseIntervalsString),
-        escapeCsvField(entry.manual ? 'Ja' : 'Nein'),
-        escapeCsvField(entry.reason),
-        escapeCsvField(entry.notes),
         escapeCsvField(entry.activityType),
         escapeCsvField(entry.customActivityDescription),
       ];
@@ -197,7 +183,7 @@ const ProfilePage: NextPage = () => {
                   </div>
               )}
             <CardTitle className="text-2xl">{user.name}</CardTitle>
-            <CardDescription>{user.email}</CardDescription>
+            <CardDescription>Mitarbeiterprofil</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground text-center">

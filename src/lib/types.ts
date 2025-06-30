@@ -32,7 +32,6 @@ export interface TimeEntry {
 export interface UserProfile {
   id: string;
   name: string;
-  email: string; // Standard field, though may not be used everywhere
   avatarUrl?: string;
 }
 
@@ -43,19 +42,19 @@ export interface User extends UserProfile {
 
 // Mock users for login selection
 export const MOCK_USERS: UserProfile[] = [
-  { id: 'user1', name: 'Maria', email: 'maria@crafton.com' },
-  { id: 'user2', name: 'Elke', email: 'elke@crafton.com' },
-  { id: 'user3', name: 'Marek', email: 'marek@crafton.com' },
-  { id: 'user4', name: 'Jason', email: 'jason@crafton.com' },
-  { id: 'user5', name: 'Nele', email: 'nele@crafton.com' },
-  { id: 'user6', name: 'Jim', email: 'jim@crafton.com' },
-  { id: 'user7', name: 'Schicki', email: 'schicki@crafton.com' },
-  { id: 'user8', name: 'Ahmad', email: 'ahmad@crafton.com' },
-  { id: 'user9', name: 'Vanessa', email: 'vanessa@crafton.com' },
-  { id: 'user10', name: 'Manjana', email: 'manjana@crafton.com' },
-  { id: 'user11', name: 'Chris', email: 'chris@crafton.com' },
-  { id: 'user12', name: 'Sarah', email: 'sarah@crafton.com' },
-  { id: 'user13', name: 'Martina', email: 'martina@crafton.com' },
-  { id: 'user14', name: 'Julie', email: 'julie@crafton.com' },
-  { id: 'user15', name: 'Regina', email: 'regina@crafton.com' },
+  { id: 'user1', name: 'Maria' },
+  { id: 'user2', name: 'Elke' },
+  { id: 'user3', name: 'Marek' },
+  { id: 'user4', name: 'Jason' },
+  { id: 'user5', name: 'Nele' },
+  { id: 'user6', name: 'Jim' },
+  { id: 'user7', name: 'Schicki' },
+  { id: 'user8', name: 'Ahmad' },
+  { id: 'user9', name: 'Vanessa' },
+  { id: 'user10', name: 'Manjana' },
+  { id: 'user11', name: 'Chris' },
+  { id: 'user12', name: 'Sarah' },
+  { id: 'user13', name: 'Martina' },
+  { id: 'user14', name: 'Julie' },
+  { id: 'user15', name: 'Regina' },
 ];
