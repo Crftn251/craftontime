@@ -1,7 +1,7 @@
 
-export type Branch = "SPZ" | "J&C" | "SPW" | "SPR" | "TAL";
+export type Branch = "SPZ" | "J&C" | "SPW" | "SPR" | "TAL" | "Büro";
 
-export const BRANCHES: Branch[] = ["SPZ", "J&C", "SPW", "SPR", "TAL"];
+export const BRANCHES: Branch[] = ["SPZ", "J&C", "SPW", "SPR", "TAL", "Büro"];
 
 export interface PauseInterval {
   startTime: number; // Timestamp
@@ -57,4 +57,5 @@ export const MOCK_USERS: UserProfile[] = [
   { id: 'user13', name: 'Martina' },
   { id: 'user14', name: 'Julie' },
   { id: 'user15', name: 'Regina' },
+  { id: 'user16', name: 'Manu' },
 ];
