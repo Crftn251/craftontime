@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { TimeTracker } from '@/components/features/TimeTracker';
 import { ManualEntryTile } from '@/components/features/ManualEntryTile';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AlertTriangle, Briefcase, Edit3, PlusCircle } from 'lucide-react'; 
+import { AlertTriangle, Briefcase, Edit3, PlusCircle, Bell } from 'lucide-react'; 
 import type { Branch, TimeEntry, ActivityType } from '@/lib/types';
 import { PREDEFINED_ACTIVITIES } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -209,6 +209,20 @@ const DashboardPage: NextPage = () => {
             <Edit3 className="mr-2 h-4 w-4" />
             Eigene Tätigkeit
           </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="w-6 h-6" />
+            Erinnerungen
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Bitte denkt daran, eure Pausenzeiten korrekt zu erfassen und nach Arbeitsende auszustempeln.
+          </p>
         </CardContent>
       </Card>
 
