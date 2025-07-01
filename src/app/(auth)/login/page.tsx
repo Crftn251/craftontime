@@ -57,7 +57,7 @@ const LoginPage: NextPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-secondary/50 p-4">
-      <Card className="w-full max-w-md shadow-2xl mb-6">
+      <Card className="w-full max-w-4xl shadow-2xl mb-6">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Briefcase className="h-16 w-16 text-primary" />
@@ -67,54 +67,56 @@ const LoginPage: NextPage = () => {
         </CardHeader>
       </Card>
 
-      <div className="w-full max-w-md space-y-6">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Users className="w-6 h-6" />
-              Mitarbeiter auswählen
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[14.5rem] overflow-y-auto pr-2">
-            <div className="grid grid-cols-3 gap-3">
-              {MOCK_USERS.map((user) => (
-                <Button
-                  key={user.id}
-                  variant={selectedUserId === user.id ? 'default' : 'outline'}
-                  className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
-                  onClick={() => setSelectedUserId(user.id)}
-                >
-                  <User className="w-7 h-7 mb-1.5" />
-                  <span className="text-xs leading-tight">{user.name}</span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="w-full max-w-4xl space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                <Users className="w-6 h-6" />
+                Mitarbeiter auswählen
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[14.5rem] overflow-y-auto pr-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {MOCK_USERS.map((user) => (
+                    <Button
+                    key={user.id}
+                    variant={selectedUserId === user.id ? 'default' : 'outline'}
+                    className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
+                    onClick={() => setSelectedUserId(user.id)}
+                    >
+                    <User className="w-7 h-7 mb-1.5" />
+                    <span className="text-xs leading-tight">{user.name}</span>
+                    </Button>
+                ))}
+                </div>
+            </CardContent>
+            </Card>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Building className="w-6 h-6" />
-              Filiale auswählen
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-auto pr-2">
-            <div className="grid grid-cols-3 gap-3">
-              {BRANCHES.map((branch) => (
-                <Button
-                  key={branch}
-                  variant={selectedBranch === branch ? 'default' : 'outline'}
-                  className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
-                  onClick={() => setSelectedBranch(branch)}
-                >
-                  <Building className="w-7 h-7 mb-1.5" />
-                  <span className="text-xs leading-tight">{branch}</span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                <Building className="w-6 h-6" />
+                Filiale auswählen
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="h-[14.5rem] overflow-y-auto pr-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {BRANCHES.map((branch) => (
+                    <Button
+                    key={branch}
+                    variant={selectedBranch === branch ? 'default' : 'outline'}
+                    className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
+                    onClick={() => setSelectedBranch(branch)}
+                    >
+                    <Building className="w-7 h-7 mb-1.5" />
+                    <span className="text-xs leading-tight">{branch}</span>
+                    </Button>
+                ))}
+                </div>
+            </CardContent>
+            </Card>
+        </div>
         
         <Button 
           onClick={handleLogin} 
