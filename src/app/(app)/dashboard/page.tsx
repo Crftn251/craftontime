@@ -24,13 +24,16 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
-const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string | null } => {
+// Hook wurde angepasst, um einen Ladezustand zurückzugeben
+const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string | null; isLoading: boolean } => {
   const [branch, setBranch] = useState<Branch | undefined>();
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Beginnt im Ladezustand
   const router = useRouter();
   const { toast } = useToast(); 
 
   useEffect(() => {
+    // Dieser Effekt läuft nur auf dem Client
     if (typeof window !== 'undefined') {
       const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
       const storedUserId = localStorage.getItem('loggedInUserId');
@@ -49,6 +52,8 @@ const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string
         router.push('/login');
       }
 
+      setIsLoading(false); // Ladezustand beenden, nachdem localStorage geprüft wurde
+
       const handleStorageChange = (event: StorageEvent) => {
         if (event.key === 'selectedBranch') {
           const newStoredBranch = event.newValue as Branch | null;
@@ -62,12 +67,13 @@ const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string
       return () => window.removeEventListener('storage', handleStorageChange);
     }
   }, [router, toast]); 
-  return { branch, userId };
+
+  return { branch, userId, isLoading };
 };
 
 
 const DashboardPage: NextPage = () => {
-  const { branch: currentBranch, userId: currentUserId } = useCurrentBranchAndUser();
+  const { branch: currentBranch, userId: currentUserId, isLoading } = useCurrentBranchAndUser();
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const { toast } = useToast();
   const router = useRouter();
@@ -82,7 +88,14 @@ const DashboardPage: NextPage = () => {
       const storedEntriesKey = `timeEntries_${currentUserId}`;
       const storedEntries = localStorage.getItem(storedEntriesKey);
       if (storedEntries) {
-        setTimeEntries(JSON.parse(storedEntries));
+        try {
+            const parsedEntries = JSON.parse(storedEntries);
+            if (Array.isArray(parsedEntries)) {
+                setTimeEntries(parsedEntries);
+            }
+        } catch (e) {
+            setTimeEntries([]);
+        }
       } else {
         setTimeEntries([]); 
       }
@@ -139,17 +152,27 @@ const DashboardPage: NextPage = () => {
       ...newEntry,
     } as TimeEntry; 
     setTimeEntries(prevEntries => [...prevEntries, entryWithDetails]);
-    // Optionally reset activity after entry
-    // setSelectedActivity(undefined);
-    // setCustomActivityDescription("");
   };
 
+  // Diese Ansicht wird vom Server UND beim ersten Client-Rendern angezeigt, um eine Diskrepanz zu vermeiden.
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
+        <AlertTriangle className="w-16 h-16 text-muted-foreground animate-pulse" />
+        <h2 className="text-2xl font-semibold">Benutzerdaten werden geladen...</h2>
+        <p className="text-muted-foreground">
+          Einen Moment, bitte...
+        </p>
+      </div>
+    );
+  }
 
+  // Diese Prüfung läuft erst, nachdem die Hydration abgeschlossen ist.
   if (!currentUserId || !currentBranch) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
         <AlertTriangle className="w-16 h-16 text-destructive" />
-        <h2 className="text-2xl font-semibold">Benutzerdaten werden geladen...</h2>
+        <h2 className="text-2xl font-semibold">Anmeldung erforderlich</h2>
         <p className="text-muted-foreground">
           Wenn diese Nachricht bestehen bleibt, versuchen Sie bitte, sich erneut anzumelden.
         </p>
