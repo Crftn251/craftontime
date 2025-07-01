@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { ProfileOverviewTile } from '@/components/features/ProfileOverviewTile';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ProfilePage: NextPage = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -137,17 +138,24 @@ const ProfilePage: NextPage = () => {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 justify-center items-center h-full">
-        <p>Profil wird geladen...</p>
-      </div>
-    );
-  }
+  const renderProfileCard = () => {
+    if (loading) {
+      return (
+        <Card className="shadow-xl">
+          <CardHeader className="items-center text-center">
+            <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-5 w-full max-w-sm mx-auto" />
+          </CardContent>
+        </Card>
+      );
+    }
 
-  if (!user) {
-    return (
-      <div className="flex flex-1 justify-center items-center h-full">
+    if (!user) {
+      return (
         <Card className="max-w-md mx-auto mt-10 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -164,33 +172,38 @@ const ProfilePage: NextPage = () => {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      );
+    }
+
+    return (
+      <Card className="shadow-xl">
+        <CardHeader className="items-center text-center">
+            {user.avatarUrl ? (
+                 <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto mb-4 object-cover" data-ai-hint="person avatar" />
+            ) : (
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+                    <UserCircle className="w-16 h-16" />
+                </div>
+            )}
+          <CardTitle className="text-2xl">{user.name}</CardTitle>
+          <CardDescription>Mitarbeiterprofil</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground text-center">
+            Übersicht der Zeiterfassung und Datenexportoptionen finden Sie unten.
+          </p>
+        </CardContent>
+      </Card>
     );
-  }
+  };
+
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 py-8">
       <div className="space-y-8 w-full max-w-4xl">
         <h1 className="text-3xl font-bold tracking-tight text-center">Mein Profil</h1>
         
-        <Card className="shadow-xl">
-          <CardHeader className="items-center text-center">
-              {user.avatarUrl ? (
-                   <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto mb-4 object-cover" data-ai-hint="person avatar" />
-              ) : (
-                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-                      <UserCircle className="w-16 h-16" />
-                  </div>
-              )}
-            <CardTitle className="text-2xl">{user.name}</CardTitle>
-            <CardDescription>Mitarbeiterprofil</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Übersicht der Zeiterfassung und Datenexportoptionen finden Sie unten.
-            </p>
-          </CardContent>
-        </Card>
+        {renderProfileCard()}
 
         <ProfileOverviewTile timeEntries={timeEntries} />
 
@@ -209,7 +222,7 @@ const ProfilePage: NextPage = () => {
             <Button 
               className="w-full" 
               onClick={handleExportData} 
-              disabled={timeEntries.length === 0}
+              disabled={loading || timeEntries.length === 0}
             >
               Als CSV exportieren (für Excel)
             </Button>
