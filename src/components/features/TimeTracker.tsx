@@ -36,24 +36,20 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
   };
 
   const handleStop = () => {
-    const { duration: durationInMs, pauseIntervals } = stop(); 
+    const { duration, totalPauseDuration, pauseIntervals, actualStartTime } = stop();
     
-    if (currentBranch && durationInMs > 1000) { // Only log entries longer than a second
-      const totalPauseDurationInSeconds = pauseIntervals.reduce((acc, interval) => {
-        return acc + (interval.endTime - interval.startTime);
-      }, 0) / 1000;
-
+    if (currentBranch && duration > 1000) { // Only log entries longer than a second
       onTimeEntryCreate({
-        startTime: Date.now() - durationInMs, 
+        startTime: actualStartTime,
         endTime: Date.now(),
-        duration: Math.floor(durationInMs / 1000), // Total duration including pauses
-        totalPauseDuration: Math.floor(totalPauseDurationInSeconds),
+        duration: Math.floor(duration / 1000), // Total duration including pauses
+        totalPauseDuration: Math.floor(totalPauseDuration / 1000),
         pauseIntervals: pauseIntervals,
         branch: currentBranch,
         notes: "Automatisierter Zeiteintrag",
       });
-      toast({ title: "Timer gestoppt", description: `Eintrag für ${formatTime(durationInMs)} in ${currentBranch} erfasst.` });
-    } else if (durationInMs <= 1000) {
+      toast({ title: "Timer gestoppt", description: `Eintrag über ${formatTime(duration)} in ${currentBranch} erfasst.` });
+    } else if (duration <= 1000) {
         toast({ title: "Timer gestoppt", description: "Es wurde keine nennenswerte Zeit erfasst.", variant: "default" });
     }
   };

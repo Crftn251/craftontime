@@ -31,42 +31,48 @@ const setLocalStorageValue = <T,>(key: string, value: T) => {
 };
 
 export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
-  const [startTime, setStartTime] = useState<number | null>(null);
+  const [initialStartTime, setInitialStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [currentPauseStartTime, setCurrentPauseStartTime] = useState<number | null>(null);
+  const [accumulatedPauseDuration, setAccumulatedPauseDuration] = useState<number>(0);
   const [sessionPauseIntervals, setSessionPauseIntervals] = useState<PauseInterval[]>([]);
   const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Hydration from localStorage
   useEffect(() => {
-    // This effect runs only on the client, after the component has mounted.
-    // This is the correct place to access localStorage.
     if (typeof window !== 'undefined') {
-      setStartTime(getLocalStorageValue<number | null>(`${persistanceKey}_startTime`, null));
+      setInitialStartTime(getLocalStorageValue<number | null>(`${persistanceKey}_initialStartTime`, null));
       setElapsedTime(getLocalStorageValue<number>(`${persistanceKey}_elapsedTime`, 0));
       setIsRunning(getLocalStorageValue<boolean>(`${persistanceKey}_isRunning`, false));
       setCurrentPauseStartTime(getLocalStorageValue<number | null>(`${persistanceKey}_currentPauseStartTime`, null));
+      setAccumulatedPauseDuration(getLocalStorageValue<number>(`${persistanceKey}_accumulatedPauseDuration`, 0));
       setSessionPauseIntervals(getLocalStorageValue<PauseInterval[]>(`${persistanceKey}_sessionPauseIntervals`, []));
-      setIsHydrated(true); // Signal that client-side state is loaded.
+      setIsHydrated(true);
     }
   }, [persistanceKey]);
 
+  // Persistance to localStorage
   useEffect(() => {
     if (isHydrated) {
-      setLocalStorageValue(`${persistanceKey}_startTime`, startTime);
+      setLocalStorageValue(`${persistanceKey}_initialStartTime`, initialStartTime);
       setLocalStorageValue(`${persistanceKey}_elapsedTime`, elapsedTime);
       setLocalStorageValue(`${persistanceKey}_isRunning`, isRunning);
       setLocalStorageValue(`${persistanceKey}_currentPauseStartTime`, currentPauseStartTime);
+      setLocalStorageValue(`${persistanceKey}_accumulatedPauseDuration`, accumulatedPauseDuration);
       setLocalStorageValue(`${persistanceKey}_sessionPauseIntervals`, sessionPauseIntervals);
     }
-  }, [startTime, elapsedTime, isRunning, currentPauseStartTime, sessionPauseIntervals, persistanceKey, isHydrated]);
+  }, [initialStartTime, elapsedTime, isRunning, currentPauseStartTime, accumulatedPauseDuration, sessionPauseIntervals, persistanceKey, isHydrated]);
 
+  // The interval for updating the display
   useEffect(() => {
-    if (isHydrated && isRunning && startTime !== null) {
+    if (isHydrated && isRunning && initialStartTime !== null) {
       intervalRef.current = setInterval(() => {
-        setElapsedTime(Date.now() - startTime);
+        const now = Date.now();
+        const productiveTime = now - initialStartTime - accumulatedPauseDuration;
+        setElapsedTime(productiveTime);
       }, 100);
     } else {
       if (intervalRef.current) {
@@ -79,67 +85,80 @@ export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, startTime, isHydrated]);
+  }, [isRunning, initialStartTime, accumulatedPauseDuration, isHydrated]);
 
   const start = useCallback(() => {
     if (!isHydrated) return;
     
     if (currentPauseStartTime) { // Resuming from a pause
-      const pauseEndTime = Date.now();
-      const newInterval: PauseInterval = { startTime: currentPauseStartTime, endTime: pauseEndTime };
+      const pauseDuration = Date.now() - currentPauseStartTime;
+      setAccumulatedPauseDuration(prev => prev + pauseDuration);
+      
+      const newInterval: PauseInterval = { startTime: currentPauseStartTime, endTime: Date.now() };
       setSessionPauseIntervals(prevIntervals => [...prevIntervals, newInterval]);
       
-      const pausedDuration = pauseEndTime - currentPauseStartTime;
-      // Adjust start time to ignore the time spent paused
-      setStartTime(prevStartTime => (prevStartTime ? prevStartTime + pausedDuration : Date.now() - elapsedTime));
       setCurrentPauseStartTime(null);
-
-    } else { // Starting fresh or from a fully stopped state
-        setStartTime(Date.now() - elapsedTime); 
+    } else if (!isRunning) { // Starting fresh only if not already running
+      setInitialStartTime(Date.now() - elapsedTime); // Preserve elapsed time if any
+      setAccumulatedPauseDuration(0);
+      setSessionPauseIntervals([]);
     }
     
     setIsRunning(true);
-  }, [isHydrated, currentPauseStartTime, elapsedTime]);
+  }, [isHydrated, currentPauseStartTime, isRunning, elapsedTime]);
 
   const pause = useCallback(() => {
     if (!isHydrated || !isRunning) return;
-    setIsRunning(false); // This will stop the interval via useEffect
+    setIsRunning(false);
     setCurrentPauseStartTime(Date.now());
-    // elapsedTime is already up-to-date from the interval
   }, [isHydrated, isRunning]);
 
   const stop = useCallback(() => {
-    if (!isHydrated) return { duration: 0, pauseIntervals: [] };
+    if (!isHydrated || initialStartTime === null) return { duration: 0, totalPauseDuration: 0, pauseIntervals: [], actualStartTime: 0 };
     
-    const finalElapsedTime = isRunning && startTime !== null ? Date.now() - startTime : elapsedTime;
+    const now = Date.now();
+    const totalDurationMs = now - initialStartTime;
+    
     let finalPauseIntervals = [...sessionPauseIntervals];
+    let finalAccumulatedPause = accumulatedPauseDuration;
 
-    if (isRunning && currentPauseStartTime) { // It was running but pause was just clicked, then stop
-        finalPauseIntervals.push({ startTime: currentPauseStartTime, endTime: Date.now() });
+    // If it was stopped while it was paused, close the current pause interval and add its duration.
+    if (currentPauseStartTime) {
+      const lastPauseDuration = now - currentPauseStartTime;
+      finalAccumulatedPause += lastPauseDuration;
+      finalPauseIntervals.push({ startTime: currentPauseStartTime, endTime: now });
     }
 
-    const returnedIntervals = [...finalPauseIntervals];
+    const result = {
+        duration: totalDurationMs,
+        totalPauseDuration: finalAccumulatedPause,
+        pauseIntervals: finalPauseIntervals,
+        actualStartTime: initialStartTime,
+    };
 
     // Reset state
     setIsRunning(false);
-    setStartTime(null);
+    setInitialStartTime(null);
     setElapsedTime(0);
     setCurrentPauseStartTime(null);
+    setAccumulatedPauseDuration(0);
     setSessionPauseIntervals([]);
     
-    return { duration: finalElapsedTime, pauseIntervals: returnedIntervals };
-  }, [isHydrated, isRunning, startTime, elapsedTime, currentPauseStartTime, sessionPauseIntervals]);
+    return result;
+  }, [isHydrated, initialStartTime, accumulatedPauseDuration, sessionPauseIntervals, currentPauseStartTime]);
 
   const reset = useCallback(() => {
     if (!isHydrated) return;
     setIsRunning(false);
-    setStartTime(null);
+    setInitialStartTime(null);
     setElapsedTime(0);
     setCurrentPauseStartTime(null);
+    setAccumulatedPauseDuration(0);
     setSessionPauseIntervals([]);
   }, [isHydrated]);
 
   const formatTime = (timeInMs: number): string => {
+    if (timeInMs < 0) timeInMs = 0;
     const totalSeconds = Math.floor(timeInMs / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -156,6 +175,6 @@ export const useStopwatch = (persistanceKey: string = 'stopwatchState') => {
     stop, 
     reset, 
     formatTime,
-    isHydrated // Expose the hydration status
+    isHydrated
   };
 };
