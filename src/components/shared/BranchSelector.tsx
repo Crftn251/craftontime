@@ -2,7 +2,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,39 +21,40 @@ interface BranchSelectorProps {
 }
 
 export const BranchSelector: FC<BranchSelectorProps> = ({ defaultBranch, onBranchChange }) => {
-  const [selectedBranch, setSelectedBranch] = useState<Branch | undefined>(() => {
-    if (typeof window !== 'undefined') {
-      const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
-      if (storedBranch && BRANCHES.includes(storedBranch)) {
-        return storedBranch;
-      }
-    }
-    return defaultBranch || (BRANCHES.length > 0 ? BRANCHES[0] : undefined);
-  });
+  const [selectedBranch, setSelectedBranch] = useState<Branch | undefined>();
 
   useEffect(() => {
-    // Effect to handle initial onBranchChange call and localStorage updates
-    // This ensures that the parent component is notified of the initial branch
-    // and that localStorage reflects the state if it wasn't set initially.
+    // This effect runs on the client after mount to set the initial branch
+    // from localStorage or fall back to a default.
+    // This avoids a hydration mismatch between server and client render.
+    const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
+    if (storedBranch && BRANCHES.includes(storedBranch)) {
+      setSelectedBranch(storedBranch);
+    } else {
+      setSelectedBranch(defaultBranch || (BRANCHES.length > 0 ? BRANCHES[0] : undefined));
+    }
+  }, [defaultBranch]);
+
+  useEffect(() => {
+    // This effect communicates the change to the parent and updates localStorage
     if (selectedBranch) {
       if (onBranchChange) {
         onBranchChange(selectedBranch);
       }
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('selectedBranch', selectedBranch);
-      }
+      localStorage.setItem('selectedBranch', selectedBranch);
     }
   }, [selectedBranch, onBranchChange]);
 
 
   // Listen for external changes to selectedBranch in localStorage (e.g., from login page)
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'selectedBranch' && event.newValue && BRANCHES.includes(event.newValue as Branch)) {
         const newBranch = event.newValue as Branch;
         if (newBranch !== selectedBranch) { // Only update if it's different
             setSelectedBranch(newBranch);
-             // onBranchChange is handled by the main useEffect for selectedBranch
         }
       }
     };
