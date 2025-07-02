@@ -3,14 +3,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// TODO: Add your own Firebase configuration from your Firebase project console
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDVM7TLNDk9jqt8zoDz9Ch-x5YTgtQ31EE",
+  authDomain: "caloriecam-ljpyg.firebaseapp.com",
+  projectId: "caloriecam-ljpyg",
+  storageBucket: "caloriecam-ljpyg.appspot.com",
+  messagingSenderId: "220425511225",
+  appId: "1:220425511225:web:ade4c7ee5808541bebc8e8"
 };
 
 // Initialize Firebase
