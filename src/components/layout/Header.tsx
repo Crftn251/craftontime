@@ -3,7 +3,7 @@
 
 import type { FC } from 'react';
 import Link from 'next/link';
-import { PanelLeft, Briefcase, User, LogOut, Gauge, UserCircle2, Bell } from 'lucide-react'; 
+import { PanelLeft, Briefcase, User, LogOut, Gauge, UserCircle2, Bell, Shield } from 'lucide-react'; 
 import { BranchSelector } from '@/components/shared/BranchSelector';
 import { Button } from '@/components/ui/button';
 import type { Branch, UserProfile } from '@/lib/types';
@@ -84,6 +84,12 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
               Erinnerungen
             </Link>
           </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/admin">
+              <Shield className="mr-2 h-4 w-4" />
+              Admin
+            </Link>
+          </Button>
         </nav>
 
         <div className="flex items-center gap-3 md:gap-4">
@@ -135,6 +141,12 @@ export const Header: FC<HeaderProps> = ({ onBranchChange, currentUser }) => {
             <Link href="/reminders">
               <Bell className="mr-2 h-5 w-5" />
               Erinnerungen
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild className="flex-1">
+            <Link href="/admin">
+              <Shield className="mr-2 h-5 w-5" />
+              Admin
             </Link>
           </Button>
       </div>
