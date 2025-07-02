@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -5,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Shield, LogOut } from 'lucide-react';
+import EmployeeManager from '@/components/features/admin/EmployeeManager';
+import NewsPublisher from '@/components/features/admin/NewsPublisher';
 
 const ADMIN_CODE = "135Crftn!";
 const LOCAL_STORAGE_KEY = 'admin_authenticated';
@@ -75,26 +78,25 @@ const AdminPage = () => {
   // If authenticated, show the admin content
   return (
     <div className="space-y-8">
-        <div className="flex justify-between items-start">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Admin-Bereich</h1>
-                <p className="text-muted-foreground">Willkommen im geschützten Admin-Bereich.</p>
-            </div>
-            <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Abmelden
-            </Button>
+      <div className="flex justify-between items-start">
+          <div>
+              <h1 className="text-3xl font-bold tracking-tight">Admin-Bereich</h1>
+              <p className="text-muted-foreground">Willkommen im geschützten Admin-Bereich.</p>
+          </div>
+          <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Abmelden
+          </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="lg:col-span-1">
+          <EmployeeManager />
         </div>
-
-        <Card>
-            <CardHeader>
-                <CardTitle>Systemsteuerung</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p>Hier könnten Admin-spezifische Inhalte und Steuerelemente angezeigt werden.</p>
-                {/* Future admin components will go here */}
-            </CardContent>
-        </Card>
+        <div className="lg:col-span-1">
+          <NewsPublisher />
+        </div>
+      </div>
     </div>
   );
 };
