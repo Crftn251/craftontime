@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "caloriecam-ljpyg"
+  },
+  "targets": {
+    "caloriecam-ljpyg": {
+      "hosting": {
+        "craftontime1": [
+          "craftontime1"
+        ]
+      }
+    }
   }
 }
