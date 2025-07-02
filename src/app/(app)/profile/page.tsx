@@ -65,10 +65,9 @@ const ProfilePage: NextPage = () => {
   const escapeCsvField = (field: any): string => {
     if (field === null || field === undefined) return '';
     let stringField = String(field);
-    // Corrected the regular expression to be on a single line
     if (stringField.search(/("|,|
 )/g) >= 0) {
-      stringField = `"${stringField.replace(/"/g, '""')}"`;
+        stringField = `"${stringField.replace(/"/g, '""')}"`;
     }
     return stringField;
   };
@@ -101,7 +100,7 @@ const ProfilePage: NextPage = () => {
     const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
+.page.tsx    link.setAttribute("href", url);
     link.setAttribute("download", `zeiteintraege_${user.id}_${format(new Date(), "yyyy-MM-dd")}.csv`);
     document.body.appendChild(link);
     link.click();
