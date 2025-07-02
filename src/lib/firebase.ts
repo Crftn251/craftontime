@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDVM7TLNDk9jqt8zoDz9Ch-x5YTgtQ31EE",
   authDomain: "caloriecam-ljpyg.firebaseapp.com",
   projectId: "caloriecam-ljpyg",
-  storageBucket: "caloriecam-ljpyg.appspot.com",
+  storageBucket: "caloriecam-ljpyg.firebasestorage.app",
   messagingSenderId: "220425511225",
   appId: "1:220425511225:web:ade4c7ee5808541bebc8e8"
 };
