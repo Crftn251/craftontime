@@ -3,7 +3,7 @@
 
 import type { NextPage } from 'next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UserCircle, Download } from 'lucide-react';
+import { UserCircle, Download, CloudUpload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { UserProfile, TimeEntry, PauseInterval, ActivityType } from '@/lib/types';
 import { MOCK_USERS } from '@/lib/types';
@@ -13,11 +13,13 @@ import { ProfileOverviewTile } from '@/components/features/ProfileOverviewTile';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { syncTimeEntriesToFirestore } from '@/services/time-data';
 
 const ProfilePage: NextPage = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -138,6 +140,36 @@ const ProfilePage: NextPage = () => {
     });
   };
 
+  const handleSyncData = async () => {
+    if (!user) {
+      toast({ title: "Benutzer nicht gefunden", description: "Es kann keine Synchronisierung ohne Benutzer durchgeführt werden.", variant: "destructive" });
+      return;
+    }
+    if (timeEntries.length === 0) {
+      toast({ title: "Keine Daten", description: "Es gibt keine Einträge zum Synchronisieren.", variant: "default" });
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      await syncTimeEntriesToFirestore(user.id, timeEntries);
+      toast({
+        title: "Synchronisierung erfolgreich",
+        description: "Ihre Zeiteinträge wurden in der Cloud gesichert.",
+      });
+    } catch (error) {
+      console.error("Fehler bei der Synchronisierung mit Firestore:", error);
+      toast({
+        title: "Synchronisierungsfehler",
+        description: "Ihre Daten konnten nicht gesichert werden. Überprüfen Sie die Konsolenausgabe für Details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+
   const renderProfileCard = () => {
     if (loading) {
       return (
@@ -206,6 +238,28 @@ const ProfilePage: NextPage = () => {
         {renderProfileCard()}
 
         <ProfileOverviewTile timeEntries={timeEntries} />
+        
+        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CloudUpload className="w-6 h-6" />
+              Cloud-Synchronisierung
+            </CardTitle>
+            <CardDescription>Sichern Sie Ihre lokal erfassten Daten in der Cloud.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Klicken Sie hier, um alle Ihre auf diesem Gerät gespeicherten Zeiteinträge sicher in unserer zentralen Datenbank zu speichern. Dies ist nützlich, um Datenverlust vorzubeugen oder Ihre Daten auf anderen Geräten verfügbar zu machen.
+            </p>
+            <Button 
+              className="w-full" 
+              onClick={handleSyncData} 
+              disabled={loading || timeEntries.length === 0 || isSyncing}
+            >
+              {isSyncing ? 'Synchronisiere...' : 'Jetzt in der Cloud sichern'}
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
