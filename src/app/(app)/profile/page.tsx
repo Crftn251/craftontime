@@ -68,8 +68,7 @@ const ProfilePage: NextPage = () => {
     let stringField = String(field);
     if (stringField.search(/("|,|
 )/g) >= 0) {
-      stringField = stringField.replace(/"/g, '""');
-      stringField = `"${stringField}"`;
+      stringField = `"${stringField.replace(/"/g, '""')}"`;
     }
     return stringField;
   };
@@ -153,7 +152,7 @@ const ProfilePage: NextPage = () => {
         
         <Card className="shadow-xl">
             <CardHeader className="items-center text-center">
-                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-.page.tsxauto mb-4 text-muted-foreground">
                     <UserCircle className="w-16 h-16" />
                 </div>
                 <CardTitle className="text-2xl">{user.name}</CardTitle>
