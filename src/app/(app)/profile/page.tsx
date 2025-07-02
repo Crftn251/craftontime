@@ -100,7 +100,7 @@ const ProfilePage: NextPage = () => {
     const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-.page.tsx    link.setAttribute("href", url);
+    link.setAttribute("href", url);
     link.setAttribute("download", `zeiteintraege_${user.id}_${format(new Date(), "yyyy-MM-dd")}.csv`);
     document.body.appendChild(link);
     link.click();
