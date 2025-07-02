@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { TimeTracker } from '@/components/features/TimeTracker';
 import { ManualEntryTile } from '@/components/features/ManualEntryTile';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { AlertTriangle, Briefcase, Edit3, PlusCircle } from 'lucide-react'; 
+import { AlertTriangle, Briefcase, Edit3, Loader2 } from 'lucide-react'; 
 import type { Branch, TimeEntry, ActivityType } from '@/lib/types';
 import { PREDEFINED_ACTIVITIES } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -24,58 +24,35 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { TimeSummaryCharts } from '@/components/features/TimeSummaryCharts';
+import { timeEntryService } from '@/services/timeEntryService';
 
-// Hook wurde angepasst, um einen Ladezustand zurückzugeben
+// This hook remains the same as it handles user session from localStorage
 const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string | null; isLoading: boolean } => {
   const [branch, setBranch] = useState<Branch | undefined>();
   const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Beginnt im Ladezustand
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { toast } = useToast(); 
 
   useEffect(() => {
-    // Dieser Effekt läuft nur auf dem Client
-    if (typeof window !== 'undefined') {
-      const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
-      const storedUserId = localStorage.getItem('loggedInUserId');
-
-      if (storedBranch) {
-        setBranch(storedBranch);
-      } else {
-        toast({ title: "Filialfehler", description: "Keine Filiale ausgewählt. Bitte erneut anmelden.", variant: "destructive" });
-        router.push('/login');
-      }
-
-      if (storedUserId) {
-        setUserId(storedUserId);
-      } else {
-        toast({ title: "Benutzerfehler", description: "Benutzer nicht identifiziert. Bitte erneut anmelden.", variant: "destructive" });
-        router.push('/login');
-      }
-
-      setIsLoading(false); // Ladezustand beenden, nachdem localStorage geprüft wurde
-
-      const handleStorageChange = (event: StorageEvent) => {
-        if (event.key === 'selectedBranch') {
-          const newStoredBranch = event.newValue as Branch | null;
-          if (newStoredBranch) setBranch(newStoredBranch);
-        }
-        if (event.key === 'loggedInUserId') {
-           setUserId(event.newValue);
-        }
-      };
-      window.addEventListener('storage', handleStorageChange);
-      return () => window.removeEventListener('storage', handleStorageChange);
+    const storedBranch = localStorage.getItem('selectedBranch') as Branch | null;
+    const storedUserId = localStorage.getItem('loggedInUserId');
+    if (storedBranch && storedUserId) {
+      setBranch(storedBranch);
+      setUserId(storedUserId);
+    } else {
+      router.push('/login');
     }
-  }, [router, toast]); 
+    setIsLoading(false);
+  }, [router]);
 
   return { branch, userId, isLoading };
 };
 
 
 const DashboardPage: NextPage = () => {
-  const { branch: currentBranch, userId: currentUserId, isLoading } = useCurrentBranchAndUser();
+  const { branch: currentBranch, userId: currentUserId, isLoading: isUserLoading } = useCurrentBranchAndUser();
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [isEntriesLoading, setIsEntriesLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -83,107 +60,99 @@ const DashboardPage: NextPage = () => {
   const [customActivityDescription, setCustomActivityDescription] = useState<string>("");
   const [isCustomActivityDialogOpen, setIsCustomActivityDialogOpen] = useState<boolean>(false);
   const [tempCustomActivity, setTempCustomActivity] = useState<string>("");
-
+  
+  // Effect to fetch time entries from Firestore
   useEffect(() => {
-    if (typeof window !== 'undefined' && currentUserId) {
-      const storedEntriesKey = `timeEntries_${currentUserId}`;
-      const storedEntries = localStorage.getItem(storedEntriesKey);
-      if (storedEntries) {
-        try {
-            const parsedEntries = JSON.parse(storedEntries);
-            if (Array.isArray(parsedEntries)) {
-                setTimeEntries(parsedEntries);
-            }
-        } catch (e) {
-            setTimeEntries([]);
-        }
-      } else {
-        setTimeEntries([]); 
+    const fetchEntries = async () => {
+      if (!currentUserId) return;
+      setIsEntriesLoading(true);
+      try {
+        const entries = await timeEntryService.getTimeEntries(currentUserId);
+        setTimeEntries(entries);
+      } catch (error) {
+        toast({
+          title: "Fehler beim Laden der Zeiteinträge",
+          description: "Ihre Einträge konnten nicht von der Datenbank geladen werden.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsEntriesLoading(false);
       }
-    } else if (typeof window !== 'undefined' && !currentUserId) {
-        setTimeEntries([]);
-    }
-  }, [currentUserId]);
+    };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && currentUserId) {
-      const storedEntriesKey = `timeEntries_${currentUserId}`;
-      localStorage.setItem(storedEntriesKey, JSON.stringify(timeEntries));
-    }
-  }, [timeEntries, currentUserId]);
+    fetchEntries();
+  }, [currentUserId, toast]);
 
   const handleActivitySelect = (activity: ActivityType) => {
     setSelectedActivity(activity);
-    if (activity !== "Eigenes") {
-      setCustomActivityDescription(""); // Clear custom if a predefined is selected
-    }
+    if (activity !== "Eigenes") setCustomActivityDescription("");
     toast({ title: "Tätigkeit ausgewählt", description: `${activity} wurde als aktuelle Tätigkeit festgelegt.` });
   };
 
   const handleOpenCustomActivityDialog = () => {
     setSelectedActivity("Eigenes");
-    setTempCustomActivity(customActivityDescription); // Load current custom desc into dialog
+    setTempCustomActivity(customActivityDescription);
     setIsCustomActivityDialogOpen(true);
   };
 
   const handleSaveCustomActivity = () => {
     setCustomActivityDescription(tempCustomActivity);
     setIsCustomActivityDialogOpen(false);
-    toast({ title: "Eigene Tätigkeit gespeichert", description: `"${tempCustomActivity}" wurde als Tätigkeit festgelegt.`});
+    toast({ title: "Eigene Tätigkeit gespeichert" });
   };
 
-
-  const handleTimeEntryCreate = (newEntry: Partial<TimeEntry>) => {
-    if (!currentUserId) {
-      toast({ title: "Authentifizierungsfehler", description: "Benutzer nicht identifiziert. Bitte anmelden.", variant: "destructive" });
-      router.push('/login');
+  const handleTimeEntryCreate = async (newEntry: Partial<TimeEntry>) => {
+    if (!currentUserId || !currentBranch) {
+      toast({ title: "Fehler", description: "Benutzer oder Filiale nicht gefunden.", variant: "destructive" });
       return;
     }
-    if (!currentBranch) {
-        toast({ title: "Filialfehler", description: "Keine Filiale ausgewählt. Bitte wählen Sie eine Filiale im Header aus.", variant: "destructive" });
-        return;
-    }
 
-    const entryWithDetails: TimeEntry = {
-      id: crypto.randomUUID(),
+    const entryToSave: Omit<TimeEntry, 'id'> = {
       userId: currentUserId,
-      branch: currentBranch, 
+      branch: currentBranch,
       activityType: selectedActivity,
       customActivityDescription: selectedActivity === "Eigenes" ? customActivityDescription : undefined,
       ...newEntry,
-    } as TimeEntry; 
-    setTimeEntries(prevEntries => [...prevEntries, entryWithDetails]);
+      startTime: newEntry.startTime || Date.now(),
+      manual: newEntry.manual || false,
+    };
+
+    try {
+      const createdEntry = await timeEntryService.addTimeEntry(entryToSave);
+      // Add the new entry to the top of the list for immediate UI feedback
+      setTimeEntries(prev => [createdEntry, ...prev]);
+      toast({ title: "Eintrag erstellt", description: "Ihr Zeiteintrag wurde gespeichert." });
+    } catch (error) {
+       toast({ title: "Fehler", description: "Eintrag konnte nicht gespeichert werden.", variant: "destructive" });
+    }
   };
 
-  // Diese Ansicht wird vom Server UND beim ersten Client-Rendern angezeigt, um eine Diskrepanz zu vermeiden.
-  if (isLoading) {
+  const onTimeEntryUpdate = (updatedEntry: TimeEntry) => {
+    setTimeEntries(prev => prev.map(e => e.id === updatedEntry.id ? updatedEntry : e));
+     toast({ title: "Eintrag aktualisiert", description: "Ihr Zeiteintrag wurde aktualisiert." });
+  }
+
+  // Loading state for user session
+  if (isUserLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
-        <AlertTriangle className="w-16 h-16 text-muted-foreground animate-pulse" />
-        <h2 className="text-2xl font-semibold">Benutzerdaten werden geladen...</h2>
-        <p className="text-muted-foreground">
-          Einen Moment, bitte...
-        </p>
+        <Loader2 className="w-16 h-16 animate-spin text-primary" />
+        <h2 className="text-2xl font-semibold">Benutzersitzung wird geladen...</h2>
       </div>
     );
   }
 
-  // Diese Prüfung läuft erst, nachdem die Hydration abgeschlossen ist.
+  // If user session fails
   if (!currentUserId || !currentBranch) {
+    // The hook already redirects, but this is a fallback UI
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4 text-center">
         <AlertTriangle className="w-16 h-16 text-destructive" />
         <h2 className="text-2xl font-semibold">Anmeldung erforderlich</h2>
-        <p className="text-muted-foreground">
-          Wenn diese Nachricht bestehen bleibt, versuchen Sie bitte, sich erneut anzumelden.
-        </p>
-        <Button onClick={() => router.push('/login')} variant="outline">
-          Zum Login
-        </Button>
+        <Button onClick={() => router.push('/login')} variant="outline">Zum Login</Button>
       </div>
     );
   }
-
 
   return (
     <div className="space-y-8">
@@ -191,11 +160,15 @@ const DashboardPage: NextPage = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <TimeTracker 
-            currentBranch={currentBranch} 
             onTimeEntryCreate={handleTimeEntryCreate} 
-            currentUserId={currentUserId} 
+            onTimeEntryUpdate={onTimeEntryUpdate}
+            currentUserId={currentUserId}
+            currentBranch={currentBranch}
         />
-        <ManualEntryTile currentBranch={currentBranch} onTimeEntryCreate={handleTimeEntryCreate} />
+        <ManualEntryTile 
+            onTimeEntryCreate={handleTimeEntryCreate} 
+            currentBranch={currentBranch} 
+        />
       </div>
 
       <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -205,7 +178,7 @@ const DashboardPage: NextPage = () => {
             Tätigkeit für nächsten Eintrag auswählen
           </CardTitle>
           <CardDescription>
-            Wählen Sie eine Tätigkeit aus, die mit dem nächsten Zeiteintrag gespeichert wird.
+            Wählen Sie eine Tätigkeit, die mit dem nächsten Zeiteintrag gespeichert wird.
             {selectedActivity && (
               <span className="block mt-1 font-semibold">
                 Aktuell ausgewählt: {selectedActivity}
@@ -240,34 +213,31 @@ const DashboardPage: NextPage = () => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Eigene Tätigkeit beschreiben</DialogTitle>
-            <DialogDescription>
-              Geben Sie eine kurze Beschreibung Ihrer aktuellen Tätigkeit ein.
-            </DialogDescription>
+            <DialogDescription>Geben Sie eine kurze Beschreibung Ihrer Tätigkeit ein.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="custom-activity-desc" className="text-right col-span-1">
-                Beschreibung
-              </Label>
-              <Textarea
-                id="custom-activity-desc"
-                value={tempCustomActivity}
-                onChange={(e) => setTempCustomActivity(e.target.value)}
-                className="col-span-3"
-                placeholder="z.B. Vorbereitung Event X"
-              />
-            </div>
+            <Label htmlFor="custom-activity-desc">Beschreibung</Label>
+            <Textarea
+              id="custom-activity-desc"
+              value={tempCustomActivity}
+              onChange={(e) => setTempCustomActivity(e.target.value)}
+              placeholder="z.B. Vorbereitung Event X"
+            />
           </div>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">Abbrechen</Button>
-            </DialogClose>
+            <DialogClose asChild><Button type="button" variant="outline">Abbrechen</Button></DialogClose>
             <Button type="button" onClick={handleSaveCustomActivity}>Speichern</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      <TimeSummaryCharts timeEntries={timeEntries} />
+      {isEntriesLoading ? (
+         <div className="flex items-center justify-center h-40">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+         </div>
+      ) : (
+        <TimeSummaryCharts timeEntries={timeEntries} />
+      )}
 
     </div>
   );

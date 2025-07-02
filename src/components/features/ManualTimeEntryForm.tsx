@@ -66,12 +66,11 @@ const manualTimeEntrySchema = z.object({
 type ManualTimeEntryFormValues = z.infer<typeof manualTimeEntrySchema>;
 
 interface ManualTimeEntryFormProps {
-  currentBranch: Branch | undefined;
-  onEntrySubmit: (entry: Partial<TimeEntry>) => void;
-  onDialogClose: () => void;
+  currentBranch: Branch;
+  onEntrySubmit: (entry: Omit<TimeEntry, 'id'>) => void;
 }
 
-export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranch, onEntrySubmit, onDialogClose }) => {
+export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranch, onEntrySubmit }) => {
   const { toast } = useToast();
   const [isCalendarOpen, setIsCalendarOpen] = useState(false); 
 
@@ -92,11 +91,6 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
   const watchedActivityType = form.watch("activityType");
 
   const onSubmit = (values: ManualTimeEntryFormValues) => {
-    if (!currentBranch) {
-      toast({ title: "Fehler", description: "Keine Filiale für die manuelle Eingabe ausgewählt.", variant: "destructive" });
-      return;
-    }
-
     const [startHours, startMinutes] = values.startTime.split(':').map(Number);
     const [endHours, endMinutes] = values.endTime.split(':').map(Number);
 
@@ -114,17 +108,17 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
       endTime: endDate.getTime(),
       duration: durationInSeconds,
       totalPauseDuration: totalPauseDurationInSeconds,
-      pauseIntervals: totalPauseDurationInSeconds > 0 ? [{startTime: startDate.getTime(), endTime: startDate.getTime() + totalPauseDurationInSeconds * 1000}] : [], // Simplified for manual entry
+      pauseIntervals: [], // Not tracked in manual entry for simplicity
       branch: currentBranch,
       notes: values.notes,
       reason: values.reason,
       manual: true,
       activityType: values.activityType === "Keine Angabe" ? undefined : values.activityType,
       customActivityDescription: values.activityType === "Eigenes" ? values.customActivityDescription : undefined,
+      userId: '', // This will be set in the DashboardPage
     });
     toast({ title: "Manueller Eintrag hinzugefügt", description: `Zeit erfasst für ${format(startDate, "PPP")} von ${values.startTime} bis ${values.endTime}.` });
     form.reset();
-    onDialogClose();
   };
 
   return (
@@ -266,7 +260,7 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
           name="reason"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Grund für manuelle Eingabe/Anpassung (Optional)</FormLabel>
+              <FormLabel>Grund für manuelle Eingabe (Optional)</FormLabel>
               <FormControl>
                 <Input placeholder="z.B. Einstempeln vergessen" {...field} />
               </FormControl>
@@ -289,7 +283,6 @@ export const ManualTimeEntryForm: FC<ManualTimeEntryFormProps> = ({ currentBranc
           )}
         />
         <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onDialogClose}>Abbrechen</Button>
             <Button type="submit">Eintrag hinzufügen</Button>
         </div>
       </form>

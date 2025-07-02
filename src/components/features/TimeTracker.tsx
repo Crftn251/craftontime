@@ -1,100 +1,157 @@
 
 "use client";
 
-import type { FC } from 'react';
-import { Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { FC, useEffect, useState } from 'react';
+import { Play, Pause, Square, RotateCcw, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useStopwatch } from '@/lib/hooks/useStopwatch';
 import type { Branch, TimeEntry } from '@/lib/types';
 import { useToast } from "@/hooks/use-toast";
+import { timeEntryService } from '@/services/timeEntryService';
 
 interface TimeTrackerProps {
-  currentBranch: Branch | undefined;
-  onTimeEntryCreate: (entry: Partial<TimeEntry>) => void;
+  onTimeEntryCreate: (entry: TimeEntry) => void;
+  onTimeEntryUpdate: (entry: TimeEntry) => void;
   currentUserId: string;
+  currentBranch: Branch;
 }
 
-export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCreate, currentUserId }) => {
-  const persistanceKey = `employeeTimeTracker_${currentUserId}`;
-  const { elapsedTime, isRunning, isPaused, start, pause, stop, reset, formatTime, isHydrated } = useStopwatch(persistanceKey);
+export const TimeTracker: FC<TimeTrackerProps> = ({ onTimeEntryCreate, onTimeEntryUpdate, currentUserId, currentBranch }) => {
+  const [ongoingEntry, setOngoingEntry] = useState<TimeEntry | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { elapsedTime, isRunning, start, pause, stop, reset, formatTime, loadInitialTime } = useStopwatch();
   const { toast } = useToast();
 
-  const handleStart = () => {
+  useEffect(() => {
+    const checkForOngoingEntry = async () => {
+      setIsLoading(true);
+      try {
+        const entry = await timeEntryService.getOngoingTimeEntry(currentUserId);
+        if (entry) {
+          setOngoingEntry(entry);
+          // Load the stopwatch with the state of the ongoing entry from the database
+          loadInitialTime(entry.startTime, entry.pauseIntervals || []);
+        }
+      } catch (error) {
+        toast({ title: "Fehler", description: "Laufender Zeiteintrag konnte nicht geprüft werden.", variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkForOngoingEntry();
+  }, [currentUserId, toast, loadInitialTime]);
+
+
+  const handleStart = async () => {
     if (!currentBranch) {
-      toast({ title: "Fehler", description: "Bitte wählen Sie zuerst eine Filiale aus.", variant: "destructive" });
+      toast({ title: "Fehler", description: "Bitte eine Filiale auswählen.", variant: "destructive" });
       return;
     }
-    const toastMessage = isPaused ? "Timer fortgesetzt" : `Zeiterfassung für Filiale ${currentBranch} gestartet.`;
-    start();
-    toast({ title: isPaused ? "Timer fortgesetzt" : "Timer gestartet", description: toastMessage });
+
+    if (ongoingEntry) { // Resuming an existing entry
+      const { pauseIntervals, totalPauseDuration } = start();
+      const updatedEntry: Partial<TimeEntry> = {
+          pauseIntervals: pauseIntervals,
+          totalPauseDuration: Math.floor(totalPauseDuration / 1000),
+      };
+      await timeEntryService.updateTimeEntry(ongoingEntry.id, updatedEntry);
+      onTimeEntryUpdate({ ...ongoingEntry, ...updatedEntry });
+      toast({ title: "Timer fortgesetzt" });
+    } else { // Starting a new entry
+      const { actualStartTime } = start();
+      const newEntryData: Omit<TimeEntry, 'id'> = {
+        userId: currentUserId,
+        branch: currentBranch,
+        startTime: actualStartTime,
+        endTime: undefined,
+        duration: 0,
+        pauseIntervals: [],
+        totalPauseDuration: 0,
+        manual: false,
+      };
+      const newEntry = await timeEntryService.addTimeEntry(newEntryData);
+      setOngoingEntry(newEntry);
+      onTimeEntryCreate(newEntry);
+      toast({ title: "Timer gestartet", description: `Zeiterfassung für ${currentBranch} begonnen.` });
+    }
   };
 
-  const handlePause = () => {
-    pause();
+  const handlePause = async () => {
+    if (!ongoingEntry) return;
+    const { pauseIntervals, totalPauseDuration } = pause();
+    const updatedEntry = { pauseIntervals, totalPauseDuration: Math.floor(totalPauseDuration/1000) };
+    await timeEntryService.updateTimeEntry(ongoingEntry.id, updatedEntry);
+    onTimeEntryUpdate({ ...ongoingEntry, ...updatedEntry });
     toast({ title: "Timer pausiert" });
   };
 
-  const handleStop = () => {
-    const { duration, totalPauseDuration, pauseIntervals, actualStartTime } = stop();
+  const handleStop = async () => {
+    if (!ongoingEntry) return;
     
-    if (currentBranch && duration > 1000) { // Only log entries longer than a second
-      onTimeEntryCreate({
-        startTime: actualStartTime,
-        endTime: Date.now(),
-        duration: Math.floor(duration / 1000), // Total duration including pauses
-        totalPauseDuration: Math.floor(totalPauseDuration / 1000),
-        pauseIntervals: pauseIntervals,
-        branch: currentBranch,
-        notes: "Automatisierter Zeiteintrag",
-      });
-      toast({ title: "Timer gestoppt", description: `Eintrag über ${formatTime(duration)} in ${currentBranch} erfasst.` });
-    } else if (duration <= 1000) {
-        toast({ title: "Timer gestoppt", description: "Es wurde keine nennenswerte Zeit erfasst.", variant: "default" });
+    const { duration, totalPauseDuration, pauseIntervals } = stop();
+    
+    if (duration > 1000) { // Only log entries longer than a second
+      const finalEntry: Partial<TimeEntry> = {
+          endTime: Date.now(),
+          duration: Math.floor(duration / 1000),
+          totalPauseDuration: Math.floor(totalPauseDuration / 1000),
+          pauseIntervals: pauseIntervals,
+      };
+      await timeEntryService.updateTimeEntry(ongoingEntry.id, finalEntry);
+      onTimeEntryUpdate({ ...ongoingEntry, ...finalEntry, id: ongoingEntry.id });
+      setOngoingEntry(null);
+      reset();
+      toast({ title: "Timer gestoppt", description: `Eintrag über ${formatTime(duration)} erfasst.` });
+    } else {
+        await timeEntryService.deleteTimeEntry(ongoingEntry.id);
+        setOngoingEntry(null);
+        reset();
+        toast({ title: "Timer gestoppt", description: "Keine nennenswerte Zeit erfasst, Eintrag gelöscht." });
     }
   };
   
-  const handleReset = () => {
-    reset();
-    toast({ title: "Timer zurückgesetzt", description: "Die aktuelle Zeiterfassung wurde zurückgesetzt." });
+  const handleReset = async () => {
+      if(ongoingEntry) {
+          await timeEntryService.deleteTimeEntry(ongoingEntry.id);
+          setOngoingEntry(null);
+      }
+      reset();
+      toast({ title: "Timer zurückgesetzt" });
   };
+
+  if(isLoading) {
+    return (
+        <Card className="shadow-lg">
+            <CardHeader><CardTitle>Zeitmesser</CardTitle></CardHeader>
+            <CardContent className="flex items-center justify-center h-48">
+                <Loader2 className="w-10 h-10 animate-spin text-primary"/>
+            </CardContent>
+        </Card>
+    )
+  }
 
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Play className="w-6 h-6" />
+          {isRunning ? <Pause className="w-6 h-6 text-primary" /> : <Play className="w-6 h-6 text-primary" />}
           Zeitmesser
         </CardTitle>
       </CardHeader>
       <CardContent className="text-center">
         <div className="text-6xl font-mono font-bold tabular-nums text-primary my-6 py-4 bg-secondary/30 rounded-lg shadow-inner">
-          {isHydrated ? formatTime(elapsedTime) : '00:00:00'}
+          {formatTime(elapsedTime)}
         </div>
         <div className="grid grid-cols-2 gap-4">
-          {!isHydrated ? (
-            <>
-              <Button size="lg" disabled className="w-full col-span-2">
-                <Play className="mr-2 h-5 w-5" /> Starten
-              </Button>
-            </>
-          ) : !isRunning && !isPaused ? (
-            <Button onClick={handleStart} size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white col-span-2">
-              <Play className="mr-2 h-5 w-5" /> Starten
+          {!isRunning ? (
+             <Button onClick={handleStart} size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white col-span-2">
+              <Play className="mr-2 h-5 w-5" /> {elapsedTime > 0 ? 'Fortsetzen' : 'Starten'}
             </Button>
-          ) : isPaused ? (
-            <>
-              <Button onClick={handleStart} size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white">
-                <Play className="mr-2 h-5 w-5" /> Pause fortsetzen
-              </Button>
-              <Button onClick={handleStop} variant="destructive" size="lg" className="w-full">
-                <Square className="mr-2 h-5 w-5" /> Stopp
-              </Button>
-            </>
           ) : ( // isRunning
             <>
               <Button onClick={handlePause} variant="outline" size="lg" className="w-full">
-                <Pause className="mr-2 h-5 w-5" /> Pause starten
+                <Pause className="mr-2 h-5 w-5" /> Pause
               </Button>
               <Button onClick={handleStop} variant="destructive" size="lg" className="w-full">
                 <Square className="mr-2 h-5 w-5" /> Stopp
@@ -104,8 +161,8 @@ export const TimeTracker: FC<TimeTrackerProps> = ({ currentBranch, onTimeEntryCr
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleReset} variant="ghost" size="sm" className="w-full text-muted-foreground" disabled={!isHydrated || (!isRunning && elapsedTime === 0)}>
-            <RotateCcw className="mr-2 h-4 w-4" /> Timer zurücksetzen
+        <Button onClick={handleReset} variant="ghost" size="sm" className="w-full text-muted-foreground" disabled={!isRunning && elapsedTime === 0}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Zurücksetzen
         </Button>
       </CardFooter>
     </Card>

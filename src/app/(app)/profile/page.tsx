@@ -3,66 +3,57 @@
 
 import type { NextPage } from 'next';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { UserCircle, Download, CloudUpload } from 'lucide-react';
+import { UserCircle, Download, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { UserProfile, TimeEntry, PauseInterval, ActivityType } from '@/lib/types';
-import { MOCK_USERS } from '@/lib/types';
+import type { UserProfile, TimeEntry } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ProfileOverviewTile } from '@/components/features/ProfileOverviewTile';
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { syncTimeEntriesToFirestore } from '@/services/time-data';
+import { timeEntryService } from '@/services/timeEntryService';
+import { userService } from '@/services/userService';
 
 const ProfilePage: NextPage = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const userId = localStorage.getItem('loggedInUserId');
-      if (userId) {
-        const foundUser = MOCK_USERS.find(u => u.id === userId);
-        setUser(foundUser || null);
+    const loadProfileData = async () => {
+      if (typeof window !== 'undefined') {
+        const userId = localStorage.getItem('loggedInUserId');
+        if (!userId) {
+          setIsLoading(false);
+          return;
+        }
 
-        const storedEntriesKey = `timeEntries_${userId}`;
-        const storedEntries = localStorage.getItem(storedEntriesKey);
-        if (storedEntries) {
-          try {
-            const parsedEntries = JSON.parse(storedEntries) as TimeEntry[];
-            if (Array.isArray(parsedEntries)) {
-              const sanitizedEntries = parsedEntries.map(entry => ({
-                ...entry,
-                startTime: Number(entry.startTime),
-                endTime: entry.endTime ? Number(entry.endTime) : undefined,
-                duration: entry.duration ? Number(entry.duration) : undefined,
-                totalPauseDuration: entry.totalPauseDuration ? Number(entry.totalPauseDuration) : 0,
-                pauseIntervals: Array.isArray(entry.pauseIntervals) ? entry.pauseIntervals.map(pi => ({
-                    startTime: Number(pi.startTime),
-                    endTime: Number(pi.endTime),
-                })) : [],
-                activityType: entry.activityType as ActivityType | undefined,
-                customActivityDescription: entry.customActivityDescription,
-              }));
-              setTimeEntries(sanitizedEntries);
-            } else {
-              setTimeEntries([]);
-            }
-          } catch (e) {
-            console.error("Fehler beim Parsen der Zeiteinträge aus localStorage", e);
-            setTimeEntries([]);
-          }
-        } else {
-          setTimeEntries([]);
+        try {
+          // Fetch user profile and time entries in parallel
+          const userPromise = userService.getUsers().then(users => users.find(u => u.id === userId));
+          const entriesPromise = timeEntryService.getTimeEntries(userId);
+
+          const [foundUser, fetchedEntries] = await Promise.all([userPromise, entriesPromise]);
+
+          setUser(foundUser || null);
+          setTimeEntries(fetchedEntries);
+
+        } catch (error) {
+          toast({
+            title: "Fehler beim Laden des Profils",
+            description: "Ihre Profildaten konnten nicht geladen werden.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsLoading(false);
         }
       }
-      setLoading(false);
-    }
-  }, []);
+    };
+
+    loadProfileData();
+  }, [toast]);
 
   const formatDurationFromSeconds = (totalSeconds: number | undefined): string => {
     if (totalSeconds === undefined || isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
@@ -75,7 +66,8 @@ const ProfilePage: NextPage = () => {
   const escapeCsvField = (field: any): string => {
     if (field === null || field === undefined) return '';
     let stringField = String(field);
-    if (stringField.search(/("|,|\n)/g) >= 0) {
+    if (stringField.search(/("|,|
+)/g) >= 0) {
       stringField = stringField.replace(/"/g, '""');
       stringField = `"${stringField}"`;
     }
@@ -84,201 +76,108 @@ const ProfilePage: NextPage = () => {
 
   const handleExportData = () => {
     if (!user || timeEntries.length === 0) {
-      toast({
-        title: "Keine Daten zum Exportieren",
-        description: "Es sind keine Zeiteinträge für diesen Benutzer zum Exportieren vorhanden.",
-        variant: "default",
-      });
+      toast({ title: "Keine Daten zum Exportieren", variant: "default" });
       return;
     }
 
-    const headers = [
-      "Filiale",
-      "Datum",
-      "Gesamtdauer (HH:MM:SS)",
-      "Produktive Dauer (HH:MM:SS)",
-      "Gesamte Pausendauer (HH:MM:SS)",
-      "Tätigkeitstyp",
-      "Eigene Tätigkeitsbeschreibung"
-    ];
-
+    const headers = ["Filiale", "Datum", "Gesamtdauer (HH:MM:SS)", "Produktive Dauer (HH:MM:SS)", "Pausendauer (HH:MM:SS)", "Tätigkeit", "Notiz"];
     const csvRows = [headers.join(',')];
 
     timeEntries.forEach(entry => {
-      const entryDate = entry.startTime ? format(new Date(entry.startTime), "yyyy-MM-dd") : '';
-      
-      const totalDurationSec = entry.duration || 0;
-      const totalPauseDurationSec = entry.totalPauseDuration || 0;
-      const productiveDurationSec = totalDurationSec - totalPauseDurationSec;
-
+      const productiveDuration = (entry.duration || 0) - (entry.totalPauseDuration || 0);
       const row = [
         escapeCsvField(entry.branch),
-        escapeCsvField(entryDate),
-        escapeCsvField(formatDurationFromSeconds(totalDurationSec)),
-        escapeCsvField(formatDurationFromSeconds(productiveDurationSec > 0 ? productiveDurationSec : 0)),
-        escapeCsvField(formatDurationFromSeconds(totalPauseDurationSec)),
+        escapeCsvField(format(new Date(entry.startTime), "yyyy-MM-dd")),
+        escapeCsvField(formatDurationFromSeconds(entry.duration)),
+        escapeCsvField(formatDurationFromSeconds(productiveDuration > 0 ? productiveDuration : 0)),
+        escapeCsvField(formatDurationFromSeconds(entry.totalPauseDuration)),
         escapeCsvField(entry.activityType),
         escapeCsvField(entry.customActivityDescription),
       ];
       csvRows.push(row.join(','));
     });
 
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // Added BOM for Excel
+    const csvString = csvRows.join('
+');
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", `zeiteintraege_${user.id}_${format(new Date(), "yyyy-MM-dd")}.csv`);
-    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    toast({
-        title: "Daten exportiert",
-        description: "Zeiteinträge wurden als CSV-Datei heruntergeladen.",
-    });
+    toast({ title: "Daten exportiert" });
   };
 
-  const handleSyncData = async () => {
-    if (!user) {
-      toast({ title: "Benutzer nicht gefunden", description: "Es kann keine Synchronisierung ohne Benutzer durchgeführt werden.", variant: "destructive" });
-      return;
-    }
-    if (timeEntries.length === 0) {
-      toast({ title: "Keine Daten", description: "Es gibt keine Einträge zum Synchronisieren.", variant: "default" });
-      return;
-    }
-
-    setIsSyncing(true);
-    try {
-      await syncTimeEntriesToFirestore(user.id, timeEntries);
-      toast({
-        title: "Synchronisierung erfolgreich",
-        description: "Ihre Zeiteinträge wurden in der Cloud gesichert.",
-      });
-    } catch (error) {
-      console.error("Fehler bei der Synchronisierung mit Firestore:", error);
-      toast({
-        title: "Synchronisierungsfehler",
-        description: "Ihre Daten konnten nicht gesichert werden. Überprüfen Sie die Konsolenausgabe für Details.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-
-  const renderProfileCard = () => {
-    if (loading) {
+  if (isLoading) {
       return (
-        <Card className="shadow-xl">
-          <CardHeader className="items-center text-center">
-            <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-5 w-full max-w-sm mx-auto" />
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center justify-center flex-1 py-8 space-y-8 w-full max-w-4xl mx-auto">
+             <h1 className="text-3xl font-bold tracking-tight text-center">Mein Profil</h1>
+             <Card className="shadow-xl w-full">
+                <CardHeader className="items-center text-center">
+                    <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-5 w-full max-w-sm mx-auto" />
+                </CardContent>
+            </Card>
+            <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-muted-foreground mt-2">Lade Profildaten...</p>
+            </div>
+        </div>
       );
-    }
+  }
 
-    if (!user) {
-      return (
-        <Card className="max-w-md mx-auto mt-10 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCircle className="w-8 h-8 text-destructive" />
-              Profil nicht gefunden
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">
-              Benutzerdetails konnten nicht geladen werden. Bitte versuchen Sie erneut, sich anzumelden.
-            </p>
-            <Button asChild className="w-full">
-              <Link href="/login">Zum Login</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      );
-    }
-
+  if (!user) {
     return (
-      <Card className="shadow-xl">
-        <CardHeader className="items-center text-center">
-            {user.avatarUrl ? (
-                 <img src={user.avatarUrl} alt={user.name} className="w-24 h-24 rounded-full mx-auto mb-4 object-cover" data-ai-hint="person avatar" />
-            ) : (
-                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
-                    <UserCircle className="w-16 h-16" />
-                </div>
-            )}
-          <CardTitle className="text-2xl">{user.name}</CardTitle>
-          <CardDescription>Mitarbeiterprofil</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground text-center">
-            Übersicht der Zeiterfassung und Datenexportoptionen finden Sie unten.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center flex-1 py-8">
+        <Card className="max-w-md mx-auto mt-10 shadow-lg">
+          <CardHeader><CardTitle>Profil nicht gefunden</CardTitle></CardHeader>
+          <CardContent>
+            <p className="mb-4">Bitte versuchen Sie erneut, sich anzumelden.</p>
+            <Button asChild className="w-full"><Link href="/login">Zum Login</Link></Button>
+          </CardContent>
+        </Card>
+      </div>
     );
-  };
-
+  }
 
   return (
     <div className="flex flex-col items-center justify-center flex-1 py-8">
       <div className="space-y-8 w-full max-w-4xl">
         <h1 className="text-3xl font-bold tracking-tight text-center">Mein Profil</h1>
         
-        {renderProfileCard()}
+        <Card className="shadow-xl">
+            <CardHeader className="items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+                    <UserCircle className="w-16 h-16" />
+                </div>
+                <CardTitle className="text-2xl">{user.name}</CardTitle>
+                <CardDescription>Mitarbeiterprofil & Datenübersicht</CardDescription>
+            </CardHeader>
+        </Card>
 
         <ProfileOverviewTile timeEntries={timeEntries} />
         
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CloudUpload className="w-6 h-6" />
-              Cloud-Synchronisierung
-            </CardTitle>
-            <CardDescription>Sichern Sie Ihre lokal erfassten Daten in der Cloud.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Download className="w-6 h-6" />Datenexport</CardTitle>
+            <CardDescription>Laden Sie Ihre Zeiterfassungsdaten als CSV-Datei herunter.</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Klicken Sie hier, um alle Ihre auf diesem Gerät gespeicherten Zeiteinträge sicher in unserer zentralen Datenbank zu speichern. Dies ist nützlich, um Datenverlust vorzubeugen oder Ihre Daten auf anderen Geräten verfügbar zu machen.
-            </p>
-            <Button 
-              className="w-full" 
-              onClick={handleSyncData} 
-              disabled={loading || timeEntries.length === 0 || isSyncing}
-            >
-              {isSyncing ? 'Synchronisiere...' : 'Jetzt in der Cloud sichern'}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Download className="w-6 h-6" />
-              Datenexport
-            </CardTitle>
-            <CardDescription>Laden Sie Ihre Zeiterfassungsdaten als CSV-Datei herunter (für Excel).</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Exportieren Sie alle Ihre erfassten Zeiteinträge, einschließlich produktiver Zeit, Pausendetails und Tätigkeitsart, als CSV-Datei. Dieses Format lässt sich leicht in Tabellenkalkulationsprogrammen wie Excel öffnen.
+              Exportieren Sie alle Ihre erfassten Zeiteinträge als CSV-Datei, die mit Programmen wie Excel kompatibel ist.
             </p>
             <Button 
               className="w-full" 
               onClick={handleExportData} 
-              disabled={loading || timeEntries.length === 0}
+              disabled={timeEntries.length === 0}
             >
-              Als CSV exportieren (für Excel)
+              Als CSV exportieren
             </Button>
           </CardContent>
         </Card>

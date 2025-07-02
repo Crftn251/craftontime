@@ -1,0 +1,27 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write to their own data, but not others'
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Allow logged-in users to read the list of users
+    match /users/{document=**} {
+      allow read: if request.auth != null;
+    }
+
+    // Time entries can only be created, read, updated, or deleted by the user who owns them
+    match /timeEntries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // News can be read by any authenticated user, but only written by an admin
+    // (We'll add a proper admin check later)
+    match /news/{newsId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Temporarily disable writing to news
+    }
+  }
+}

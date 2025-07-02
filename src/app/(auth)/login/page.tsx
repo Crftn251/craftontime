@@ -7,38 +7,46 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Branch, UserProfile } from '@/lib/types';
-import { BRANCHES, MOCK_USERS } from '@/lib/types'; // MOCK_USERS is fallback
+import { BRANCHES } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { Briefcase, User, LogIn, Building, Users } from 'lucide-react';
+import { Briefcase, User, LogIn, Building, Users, Loader2 } from 'lucide-react';
+import { userService } from '@/services/userService';
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
   const [selectedBranch, setSelectedBranch] = useState<Branch | undefined>();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoginLoading, setIsLoginLoading] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client
-    if (typeof window !== 'undefined') {
-        // Redirect if already logged in
-        if (localStorage.getItem('isAuthenticated') === 'true') {
-            router.replace('/dashboard');
-            return;
-        }
-        
-        // Load users from localStorage, or initialize it with MOCK_USERS if it doesn't exist
-        const storedUsers = localStorage.getItem('MOCK_USERS');
-        if (storedUsers) {
-            setUsers(JSON.parse(storedUsers));
-        } else {
-            // Initialize localStorage with the default list if it's the first visit
-            localStorage.setItem('MOCK_USERS', JSON.stringify(MOCK_USERS));
-            setUsers(MOCK_USERS);
-        }
+    // Redirect if already logged in
+    if (typeof window !== 'undefined' && localStorage.getItem('isAuthenticated') === 'true') {
+      router.replace('/dashboard');
     }
   }, [router]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsUsersLoading(true);
+        const fetchedUsers = await userService.getUsers();
+        setUsers(fetchedUsers);
+      } catch (error) {
+        toast({
+          title: 'Fehler beim Laden der Benutzer',
+          description: 'Die Mitarbeiterliste konnte nicht von der Datenbank geladen werden.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsUsersLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [toast]);
 
   const handleLogin = () => {
     if (!selectedUserId) {
@@ -50,8 +58,9 @@ const LoginPage: NextPage = () => {
       return;
     }
 
-    setIsLoading(true);
+    setIsLoginLoading(true);
 
+    // In a real app, you would perform authentication here
     setTimeout(() => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('loggedInUserId', selectedUserId);
@@ -65,7 +74,7 @@ const LoginPage: NextPage = () => {
       }
       toast({ title: 'Anmeldung erfolgreich', description: `Willkommen! Weiterleitung zum Dashboard für Filiale ${selectedBranch}.` });
       router.push('/dashboard');
-      setIsLoading(false);
+      setIsLoginLoading(false);
     }, 500);
   };
 
@@ -91,19 +100,25 @@ const LoginPage: NextPage = () => {
                 </CardTitle>
             </CardHeader>
             <CardContent className="h-[14.5rem] overflow-y-auto pr-2">
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {users.map((user) => (
-                    <Button
-                    key={user.id}
-                    variant={selectedUserId === user.id ? 'default' : 'outline'}
-                    className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
-                    onClick={() => setSelectedUserId(user.id)}
-                    >
-                    <User className="w-7 h-7 mb-1.5" />
-                    <span className="text-xs leading-tight">{user.name}</span>
-                    </Button>
-                ))}
-                </div>
+                {isUsersLoading ? (
+                    <div className="flex items-center justify-center h-full">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {users.map((user) => (
+                        <Button
+                        key={user.id}
+                        variant={selectedUserId === user.id ? 'default' : 'outline'}
+                        className="flex flex-col items-center justify-center h-24 w-full aspect-square p-1.5 text-center"
+                        onClick={() => setSelectedUserId(user.id)}
+                        >
+                        <User className="w-7 h-7 mb-1.5" />
+                        <span className="text-xs leading-tight">{user.name}</span>
+                        </Button>
+                    ))}
+                    </div>
+                )}
             </CardContent>
             </Card>
 
@@ -136,9 +151,9 @@ const LoginPage: NextPage = () => {
           onClick={handleLogin} 
           className="w-full" 
           size="lg" 
-          disabled={isLoading || !selectedUserId || !selectedBranch}
+          disabled={isLoginLoading || isUsersLoading || !selectedUserId || !selectedBranch}
         >
-          {isLoading ? (
+          {isLoginLoading ? (
             <LogIn className="mr-2 h-5 w-5 animate-spin" />
           ) : (
             <LogIn className="mr-2 h-5 w-5" />

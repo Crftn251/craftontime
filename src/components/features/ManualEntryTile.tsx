@@ -20,12 +20,17 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ManualEntryTileProps {
   currentBranch: Branch | undefined;
-  onTimeEntryCreate: (entry: Partial<TimeEntry>) => void;
+  onTimeEntryCreate: (entry: TimeEntry) => void;
 }
 
 export const ManualEntryTile: FC<ManualEntryTileProps> = ({ currentBranch, onTimeEntryCreate }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const handleFormSubmit = (entry: TimeEntry) => {
+    onTimeEntryCreate(entry);
+    setIsDialogOpen(false); // Close dialog on successful submission
+  }
 
   const handleOpenChange = (open: boolean) => {
     if (open && !currentBranch) {
@@ -34,7 +39,7 @@ export const ManualEntryTile: FC<ManualEntryTileProps> = ({ currentBranch, onTim
             description: "Bitte wählen Sie eine Filiale aus, bevor Sie einen manuellen Zeiteintrag hinzufügen.",
             variant: "destructive",
         });
-        return; // Prevent dialog from opening
+        return;
     }
     setIsDialogOpen(open);
   };
@@ -49,33 +54,26 @@ export const ManualEntryTile: FC<ManualEntryTileProps> = ({ currentBranch, onTim
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-4">
-          Manuelles Hinzufügen oder Anpassen von Zeiteinträgen für bestimmte Daten und Zeiten.
+          Manuelles Hinzufügen von Zeiteinträgen für bestimmte Daten und Zeiten.
         </p>
         <Dialog open={isDialogOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="w-full" variant="outline">
-              Eintrag hinzufügen/anpassen
+              Manuellen Eintrag hinzufügen
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
               <DialogTitle>Manuelle Zeiteingabe</DialogTitle>
               <DialogDescription>
-                Füllen Sie die Details für Ihren Zeiteintrag aus. Stellen Sie sicher, dass die ausgewählte Filiale korrekt ist.
                 Aktuelle Filiale: <span className="font-semibold">{currentBranch || "Keine ausgewählt"}</span>
               </DialogDescription>
             </DialogHeader>
             {currentBranch && (
                  <ManualTimeEntryForm 
                     currentBranch={currentBranch} 
-                    onEntrySubmit={onTimeEntryCreate}
-                    onDialogClose={() => setIsDialogOpen(false)}
+                    onEntrySubmit={handleFormSubmit}
                 />
-            )}
-            {!currentBranch && (
-                <div className="p-4 text-center text-destructive-foreground bg-destructive rounded-md">
-                    Bitte wählen Sie eine Filiale im Header aus, bevor Sie einen manuellen Eintrag vornehmen.
-                </div>
             )}
           </DialogContent>
         </Dialog>
