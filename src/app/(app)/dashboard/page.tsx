@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { TimeSummaryCharts } from '@/components/features/TimeSummaryCharts';
 
 // Hook wurde angepasst, um einen Ladezustand zurückzugeben
 const useCurrentBranchAndUser = (): { branch: Branch | undefined; userId: string | null; isLoading: boolean } => {
@@ -265,6 +266,8 @@ const DashboardPage: NextPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <TimeSummaryCharts timeEntries={timeEntries} />
 
     </div>
   );
