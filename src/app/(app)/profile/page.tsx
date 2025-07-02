@@ -31,7 +31,6 @@ const ProfilePage: NextPage = () => {
         }
 
         try {
-          // Fetch user profile and time entries in parallel
           const userPromise = userService.getUsers().then(users => users.find(u => u.id === userId));
           const entriesPromise = timeEntryService.getTimeEntries(userId);
 
@@ -66,6 +65,7 @@ const ProfilePage: NextPage = () => {
   const escapeCsvField = (field: any): string => {
     if (field === null || field === undefined) return '';
     let stringField = String(field);
+    // Corrected the regular expression to be on a single line
     if (stringField.search(/("|,|
 )/g) >= 0) {
       stringField = `"${stringField.replace(/"/g, '""')}"`;
@@ -152,7 +152,7 @@ const ProfilePage: NextPage = () => {
         
         <Card className="shadow-xl">
             <CardHeader className="items-center text-center">
-                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-.page.tsxauto mb-4 text-muted-foreground">
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
                     <UserCircle className="w-16 h-16" />
                 </div>
                 <CardTitle className="text-2xl">{user.name}</CardTitle>
