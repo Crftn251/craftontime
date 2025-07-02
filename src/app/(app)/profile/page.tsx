@@ -66,7 +66,8 @@ const ProfilePage: NextPage = () => {
     if (field === null || field === undefined) return '';
     let stringField = String(field);
     if (stringField.search(/("|,|
-)/g) >= 0) {
+)/g) >= 0) { // Corrected: 
+ for newline
         stringField = `"${stringField.replace(/"/g, '""')}"`;
     }
     return stringField;
@@ -96,7 +97,8 @@ const ProfilePage: NextPage = () => {
     });
 
     const csvString = csvRows.join('
-');
+'); // Corrected: 
+ for literal newline
     const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
