@@ -7,21 +7,36 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Branch, UserProfile } from '@/lib/types';
-import { BRANCHES, MOCK_USERS } from '@/lib/types';
+import { BRANCHES, MOCK_USERS } from '@/lib/types'; // MOCK_USERS is fallback
 import { useToast } from '@/hooks/use-toast';
 import { Briefcase, User, LogIn, Building, Users } from 'lucide-react';
 
 const LoginPage: NextPage = () => {
   const router = useRouter();
   const { toast } = useToast();
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
   const [selectedBranch, setSelectedBranch] = useState<Branch | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // If already authenticated, redirect to dashboard
-    if (typeof window !== 'undefined' && localStorage.getItem('isAuthenticated') === 'true') {
-      router.replace('/dashboard');
+    // This effect runs only on the client
+    if (typeof window !== 'undefined') {
+        // Redirect if already logged in
+        if (localStorage.getItem('isAuthenticated') === 'true') {
+            router.replace('/dashboard');
+            return;
+        }
+        
+        // Load users from localStorage, or initialize it with MOCK_USERS if it doesn't exist
+        const storedUsers = localStorage.getItem('MOCK_USERS');
+        if (storedUsers) {
+            setUsers(JSON.parse(storedUsers));
+        } else {
+            // Initialize localStorage with the default list if it's the first visit
+            localStorage.setItem('MOCK_USERS', JSON.stringify(MOCK_USERS));
+            setUsers(MOCK_USERS);
+        }
     }
   }, [router]);
 
@@ -37,14 +52,13 @@ const LoginPage: NextPage = () => {
 
     setIsLoading(true);
 
-    // Simulate API call
     setTimeout(() => {
       if (typeof window !== 'undefined') {
         localStorage.setItem('loggedInUserId', selectedUserId);
         localStorage.setItem('selectedBranch', selectedBranch);
         localStorage.setItem('isAuthenticated', 'true');
         
-        const user = MOCK_USERS.find(u => u.id === selectedUserId);
+        const user = users.find(u => u.id === selectedUserId);
         if (user) {
             localStorage.setItem('loggedInUserName', user.name);
         }
@@ -78,7 +92,7 @@ const LoginPage: NextPage = () => {
             </CardHeader>
             <CardContent className="h-[14.5rem] overflow-y-auto pr-2">
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                {MOCK_USERS.map((user) => (
+                {users.map((user) => (
                     <Button
                     key={user.id}
                     variant={selectedUserId === user.id ? 'default' : 'outline'}
